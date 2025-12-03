@@ -9,12 +9,8 @@ import Login from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
 import Schools from '@/pages/Schools';
 import Administrators from '@/pages/Administrators';
-import Departments from '@/pages/Departments';
-import Subjects from '@/pages/Subjects';
 import Teachers from '@/pages/Teachers';
 import Students from '@/pages/Students';
-import Parents from '@/pages/Parents';
-import Classes from '@/pages/Classes';
 import NotFound from '@/pages/NotFound';
 
 function App() {
@@ -59,27 +55,11 @@ function App() {
               }
             />
 
-            {/* School Administrator Routes */}
-            <Route
-              path="departments"
-              element={
-                <ProtectedRoute allowedRoles={['school_admin']}>
-                  <Departments />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="subjects"
-              element={
-                <ProtectedRoute allowedRoles={['school_admin']}>
-                  <Subjects />
-                </ProtectedRoute>
-              }
-            />
+            {/* Administrator Routes (Super Admin can also access) */}
             <Route
               path="teachers"
               element={
-                <ProtectedRoute allowedRoles={['school_admin']}>
+                <ProtectedRoute allowedRoles={['super_admin', 'administrator']}>
                   <Teachers />
                 </ProtectedRoute>
               }
@@ -87,24 +67,8 @@ function App() {
             <Route
               path="students"
               element={
-                <ProtectedRoute allowedRoles={['school_admin']}>
+                <ProtectedRoute allowedRoles={['super_admin', 'administrator']}>
                   <Students />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="parents"
-              element={
-                <ProtectedRoute allowedRoles={['school_admin']}>
-                  <Parents />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="classes"
-              element={
-                <ProtectedRoute allowedRoles={['school_admin', 'teacher']}>
-                  <Classes />
                 </ProtectedRoute>
               }
             />

@@ -37,15 +37,16 @@ const Sidebar = ({ isCollapsed }: SidebarProps) => {
         { label: 'Schools', href: '/schools', icon: School },
         { label: 'Administrators', href: '/administrators', icon: Users },
       ],
-      administrator: [
+      school_admin: [
+        { label: 'Departments', href: '/departments', icon: Building2 },
+        { label: 'Subjects', href: '/subjects', icon: BookOpen },
         { label: 'Teachers', href: '/teachers', icon: GraduationCap },
         { label: 'Students', href: '/students', icon: Users },
         { label: 'Parents', href: '/parents', icon: UserCircle },
-        { label: 'Departments', href: '/departments', icon: Building2 },
-        { label: 'Subjects', href: '/subjects', icon: BookOpen },
         { label: 'Classes', href: '/classes', icon: School },
       ],
       teacher: [
+        { label: 'My Classes', href: '/my-classes', icon: School },
         { label: 'Syllabi', href: '/syllabi', icon: FileText },
         { label: 'Assignments', href: '/assignments', icon: BookOpen },
         { label: 'Resources', href: '/resources', icon: FolderOpen },

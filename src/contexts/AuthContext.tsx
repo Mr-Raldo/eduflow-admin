@@ -8,7 +8,8 @@ interface User {
   email: string;
   first_name: string;
   last_name: string;
-  account_type: 'super_admin' | 'administrator' | 'teacher' | 'student' | 'parent';
+  account_type: 'super_admin' | 'school_admin' | 'teacher' | 'student' | 'parent';
+  school_id?: string; // For school_admin - which school they manage
 }
 
 interface AuthContextType {
@@ -41,8 +42,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (accountType: string, email: string, password: string) => {
     try {
+      // Map super_admin and school_admin to administrator for backend compatibility
+      // Both super_admin and school_admin use 'administrator' table in backend
+      let backendAccountType = accountType;
+      if (accountType === 'super_admin' || accountType === 'school_admin') {
+        backendAccountType = 'administrator';
+      }
+
       const response = await axios.post('/auth/login', {
-        account_type: accountType,
+        account_type: backendAccountType,
         email,
         password,
       });
@@ -51,9 +59,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       localStorage.setItem('access_token', access_token);
       localStorage.setItem('refresh_token', refresh_token);
-      localStorage.setItem('user', JSON.stringify(userData));
 
-      setUser(userData);
+      // Store user with correct frontend account_type
+      let userWithCorrectType: User = {
+        ...userData,
+        account_type: accountType as User['account_type'], // Keep frontend type (super_admin or school_admin)
+      };
+
+      // If school_admin, fetch their schools and store first school_id
+      if (accountType === 'school_admin') {
+        try {
+          // Import administratorsApi dynamically to avoid circular dependency
+          const { administratorsApi } = await import('@/api/administrators');
+          const schools = await administratorsApi.getSchools(userData.id);
+
+          if (schools && schools.length > 0) {
+            userWithCorrectType.school_id = schools[0].school_id;
+          }
+        } catch (error) {
+          console.error('Failed to fetch school associations:', error);
+          // Continue login even if school fetch fails
+        }
+      }
+
+      localStorage.setItem('user', JSON.stringify(userWithCorrectType));
+      setUser(userWithCorrectType);
       toast.success('Login successful!');
       navigate('/dashboard');
     } catch (error: any) {
@@ -74,29 +104,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const getRoleColor = () => {
     if (!user) return 'hsl(var(--primary))';
-    
+
     const roleColors = {
       super_admin: 'hsl(var(--super-admin))',
-      administrator: 'hsl(var(--super-admin))',
+      school_admin: 'hsl(var(--super-admin))', // Same yellow color as super admin
       teacher: 'hsl(var(--teacher))',
       student: 'hsl(var(--student))',
       parent: 'hsl(var(--parent))',
     };
-    
+
     return roleColors[user.account_type] || 'hsl(var(--primary))';
   };
 
   const getRoleGradient = () => {
     if (!user) return 'gradient-teacher';
-    
+
     const roleGradients = {
       super_admin: 'gradient-super-admin',
-      administrator: 'gradient-super-admin',
+      school_admin: 'gradient-super-admin', // Same gradient as super admin
       teacher: 'gradient-teacher',
       student: 'gradient-student',
       parent: 'gradient-parent',
     };
-    
+
     return roleGradients[user.account_type] || 'gradient-teacher';
   };
 

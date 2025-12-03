@@ -55,7 +55,7 @@ const Login = () => {
   const getRoleColor = () => {
     const colors = {
       super_admin: 'bg-super-admin',
-      administrator: 'bg-super-admin',
+      school_admin: 'bg-super-admin',
       teacher: 'bg-teacher',
       student: 'bg-student',
       parent: 'bg-parent',
@@ -95,8 +95,8 @@ const Login = () => {
                   <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="super_admin">Super Admin</SelectItem>
-                  <SelectItem value="administrator">Administrator</SelectItem>
+                  <SelectItem value="super_admin">Super Administrator</SelectItem>
+                  <SelectItem value="school_admin">School Administrator</SelectItem>
                   <SelectItem value="teacher">Teacher</SelectItem>
                   <SelectItem value="student">Student</SelectItem>
                   <SelectItem value="parent">Parent</SelectItem>

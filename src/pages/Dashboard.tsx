@@ -1,6 +1,8 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, School, BookOpen, GraduationCap, FileText, TrendingUp } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { schoolAdminApi } from '@/api/school-admin';
 
 const Dashboard = () => {
   const { user, getRoleGradient } = useAuth();
@@ -10,7 +12,7 @@ const Dashboard = () => {
 
     const dashboards: Record<string, JSX.Element> = {
       super_admin: <SuperAdminDashboard />,
-      administrator: <AdministratorDashboard />,
+      school_admin: <SchoolAdminDashboard />,
       teacher: <TeacherDashboard />,
       student: <StudentDashboard />,
       parent: <ParentDashboard />,
@@ -62,12 +64,61 @@ const SuperAdminDashboard = () => {
   );
 };
 
-const AdministratorDashboard = () => {
+const SchoolAdminDashboard = () => {
+  const { user } = useAuth();
+
+  // Fetch real data from backend
+  const { data: departments = [], isLoading: loadingDepartments } = useQuery({
+    queryKey: ['departments', user?.school_id],
+    queryFn: () => schoolAdminApi.getDepartments(user?.school_id || ''),
+    enabled: !!user?.school_id,
+  });
+
+  const { data: subjects = [], isLoading: loadingSubjects } = useQuery({
+    queryKey: ['subjects', user?.school_id],
+    queryFn: () => schoolAdminApi.getSubjects(user?.school_id || ''),
+    enabled: !!user?.school_id,
+  });
+
+  const { data: teachers = [], isLoading: loadingTeachers } = useQuery({
+    queryKey: ['teachers', user?.school_id],
+    queryFn: () => schoolAdminApi.getSchoolTeachers(user?.school_id || ''),
+    enabled: !!user?.school_id,
+  });
+
+  const { data: students = [], isLoading: loadingStudents } = useQuery({
+    queryKey: ['students', user?.school_id],
+    queryFn: () => schoolAdminApi.getSchoolStudents(user?.school_id || ''),
+    enabled: !!user?.school_id,
+  });
+
+  const isLoading = loadingDepartments || loadingSubjects || loadingTeachers || loadingStudents;
+
   const stats = [
-    { label: 'Students', value: '543', icon: Users, color: 'text-student' },
-    { label: 'Teachers', value: '42', icon: GraduationCap, color: 'text-teacher' },
-    { label: 'Classes', value: '28', icon: School, color: 'text-super-admin' },
-    { label: 'Departments', value: '8', icon: BookOpen, color: 'text-parent' },
+    {
+      label: 'Departments',
+      value: isLoading ? '...' : departments.length.toString(),
+      icon: BookOpen,
+      color: 'text-super-admin'
+    },
+    {
+      label: 'Subjects',
+      value: isLoading ? '...' : subjects.length.toString(),
+      icon: BookOpen,
+      color: 'text-parent'
+    },
+    {
+      label: 'Teachers',
+      value: isLoading ? '...' : teachers.length.toString(),
+      icon: GraduationCap,
+      color: 'text-teacher'
+    },
+    {
+      label: 'Students',
+      value: isLoading ? '...' : students.length.toString(),
+      icon: Users,
+      color: 'text-student'
+    },
   ];
 
   return (

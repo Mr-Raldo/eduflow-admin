@@ -16,23 +16,27 @@ interface HeaderProps {
 }
 
 const Header = ({ onToggleSidebar }: HeaderProps) => {
-  const { user, logout, getRoleColor } = useAuth();
+  const { profile, logout, getRoleColor, getPrimaryRole } = useAuth();
 
   const getInitials = () => {
-    if (!user) return 'U';
-    return `${user.first_name.charAt(0)}${user.last_name.charAt(0)}`.toUpperCase();
+    if (!profile) return 'U';
+    const first = profile.first_name?.charAt(0) || '';
+    const last = profile.last_name?.charAt(0) || '';
+    return `${first}${last}`.toUpperCase() || 'U';
   };
 
   const getRoleName = () => {
-    if (!user) return '';
+    const role = getPrimaryRole();
+    if (!role) return '';
     const roleNames: Record<string, string> = {
-      super_admin: 'Super Admin',
-      administrator: 'Administrator',
+      admin: 'Administrator',
+      headmaster: 'Headmaster',
+      hod: 'Head of Department',
       teacher: 'Teacher',
       student: 'Student',
       parent: 'Parent',
     };
-    return roleNames[user.account_type] || user.account_type;
+    return roleNames[role] || role;
   };
 
   return (
@@ -63,7 +67,7 @@ const Header = ({ onToggleSidebar }: HeaderProps) => {
                 </Avatar>
                 <div className="text-left hidden md:block">
                   <p className="text-sm font-semibold">
-                    {user?.first_name} {user?.last_name}
+                    {profile?.first_name} {profile?.last_name}
                   </p>
                   <p className="text-xs text-muted-foreground">{getRoleName()}</p>
                 </div>

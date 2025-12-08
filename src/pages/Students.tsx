@@ -9,12 +9,21 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface Student {
   id: string;
+  user_id: string;
+  student_number: string;
   email: string;
   first_name: string;
   last_name: string;
+  phone?: string;
   profile_picture?: string;
+  date_of_birth?: string;
+  gender?: string;
+  address?: string;
+  enrollment_date: string;
+  class_id?: string;
+  class_name?: string;
+  academic_level?: string;
   created_at: string;
-  updated_at: string;
 }
 
 interface CreateStudentData {
@@ -22,7 +31,11 @@ interface CreateStudentData {
   password: string;
   first_name: string;
   last_name: string;
-  school_id: string;
+  school_id: string;  // Required for multi-tenant isolation
+  class_id?: string;
+  date_of_birth?: string;
+  gender?: string;
+  address?: string;
 }
 import {
   Dialog,
@@ -34,6 +47,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -56,13 +76,25 @@ const Students = () => {
     password: '',
     first_name: '',
     last_name: '',
-    school_id: user?.school_id || '',
+    school_id: user?.school_id || '',  // From logged-in school admin
+    class_id: '',
+    date_of_birth: '',
+    gender: '',
+    address: '',
   });
 
-  const { data: students = [], isLoading } = useQuery({
-    queryKey: ['students', user?.school_id],
-    queryFn: () => schoolAdminApi.getSchoolStudents(user?.school_id || ''),
-    enabled: !!user?.school_id,
+  const { data: students = [], isLoading, error } = useQuery({
+    queryKey: ['students'],
+    queryFn: () => schoolAdminApi.getSchoolStudents(''),
+  });
+
+  // Debug logging
+  console.log('Students query state:', { students, isLoading, error });
+
+  // Fetch classes for dropdown
+  const { data: classes = [] } = useQuery({
+    queryKey: ['classes'],
+    queryFn: schoolAdminApi.getClasses,
   });
 
   const createMutation = useMutation({
@@ -91,13 +123,13 @@ const Students = () => {
   });
 
   const handleOpenCreate = () => {
-    setFormData({ email: '', password: '', first_name: '', last_name: '', school_id: user?.school_id || '' });
+    setFormData({ email: '', password: '', first_name: '', last_name: '', school_id: user?.school_id || '', class_id: '', date_of_birth: '', gender: '', address: '' });
     setIsFormOpen(true);
   };
 
   const handleCloseForm = () => {
     setIsFormOpen(false);
-    setFormData({ email: '', password: '', first_name: '', last_name: '', school_id: user?.school_id || '' });
+    setFormData({ email: '', password: '', first_name: '', last_name: '', school_id: user?.school_id || '', class_id: '', date_of_birth: '', gender: '', address: '' });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -118,6 +150,11 @@ const Students = () => {
 
   const columns: Column<Student>[] = [
     {
+      header: 'Student Number',
+      accessor: 'student_number',
+      sortable: true,
+    },
+    {
       header: 'Name',
       accessor: (row) => `${row.first_name} ${row.last_name}`,
       sortable: true,
@@ -128,8 +165,17 @@ const Students = () => {
       sortable: true,
     },
     {
-      header: 'Created',
-      accessor: (row) => new Date(row.created_at).toLocaleDateString(),
+      header: 'Class',
+      accessor: (row) => row.class_name || 'Not Assigned',
+      sortable: true,
+    },
+    {
+      header: 'Gender',
+      accessor: (row) => row.gender || '-',
+    },
+    {
+      header: 'Enrollment Date',
+      accessor: (row) => row.enrollment_date ? new Date(row.enrollment_date).toLocaleDateString() : '-',
     },
   ];
 
@@ -225,6 +271,71 @@ const Students = () => {
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
                   minLength={6}
+                  className="rounded-2xl"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="class_id">Class</Label>
+                <Select
+                  value={formData.class_id || undefined}
+                  onValueChange={(value) => setFormData({ ...formData, class_id: value })}
+                >
+                  <SelectTrigger className="rounded-2xl">
+                    <SelectValue placeholder="Select class (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {classes.length === 0 ? (
+                      <SelectItem value="none" disabled>
+                        No classes available
+                      </SelectItem>
+                    ) : (
+                      classes.map((classItem: any) => (
+                        <SelectItem key={classItem.id} value={classItem.id}>
+                          {classItem.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date_of_birth">Date of Birth</Label>
+                  <Input
+                    id="date_of_birth"
+                    type="date"
+                    value={formData.date_of_birth}
+                    onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                    className="rounded-2xl"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="gender">Gender</Label>
+                  <Select
+                    value={formData.gender || undefined}
+                    onValueChange={(value) => setFormData({ ...formData, gender: value })}
+                  >
+                    <SelectTrigger className="rounded-2xl">
+                      <SelectValue placeholder="Select gender" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Male">Male</SelectItem>
+                      <SelectItem value="Female">Female</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address">Address</Label>
+                <Input
+                  id="address"
+                  value={formData.address}
+                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  placeholder="Enter address (optional)"
                   className="rounded-2xl"
                 />
               </div>

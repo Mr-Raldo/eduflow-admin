@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { schoolAdminApi } from '@/api/school-admin';
+import { schoolsApi } from '@/api/schools';
 import { DataTable, Column } from '@/components/tables/DataTable';
 import { Button } from '@/components/ui/button';
 import { Plus, GraduationCap } from 'lucide-react';
@@ -13,6 +14,11 @@ interface Teacher {
   first_name: string;
   last_name: string;
   profile_picture?: string;
+  department_id?: string;
+  department?: {
+    id: string;
+    name: string;
+  } | null;
   created_at: string;
   updated_at: string;
 }
@@ -22,7 +28,8 @@ interface CreateTeacherData {
   password: string;
   first_name: string;
   last_name: string;
-  school_id: string;
+  department_id?: string;
+  subject_id?: string;
 }
 import {
   Dialog,
@@ -44,6 +51,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const Teachers = () => {
   const queryClient = useQueryClient();
@@ -56,13 +70,36 @@ const Teachers = () => {
     password: '',
     first_name: '',
     last_name: '',
-    school_id: user?.school_id || '',
+    department_id: '',
+    subject_id: '',
   });
 
+  // Fetch the school info to get school_id
+  const { data: schools = [] } = useQuery({
+    queryKey: ['schools'],
+    queryFn: schoolsApi.getAll,
+  });
+
+  const schoolId = schools[0]?.id;
+
   const { data: teachers = [], isLoading } = useQuery({
-    queryKey: ['teachers', user?.school_id],
-    queryFn: () => schoolAdminApi.getSchoolTeachers(user?.school_id || ''),
-    enabled: !!user?.school_id,
+    queryKey: ['teachers', schoolId],
+    queryFn: () => schoolAdminApi.getSchoolTeachers(schoolId || ''),
+    enabled: !!schoolId,
+  });
+
+  // Fetch departments for dropdown
+  const { data: departments = [] } = useQuery({
+    queryKey: ['departments', schoolId],
+    queryFn: () => schoolAdminApi.getDepartments(schoolId || ''),
+    enabled: !!schoolId,
+  });
+
+  // Fetch subjects for dropdown
+  const { data: subjects = [] } = useQuery({
+    queryKey: ['subjects', schoolId],
+    queryFn: () => schoolAdminApi.getSubjects(schoolId || ''),
+    enabled: !!schoolId,
   });
 
   const createMutation = useMutation({
@@ -91,13 +128,13 @@ const Teachers = () => {
   });
 
   const handleOpenCreate = () => {
-    setFormData({ email: '', password: '', first_name: '', last_name: '', school_id: user?.school_id || '' });
+    setFormData({ email: '', password: '', first_name: '', last_name: '', department_id: '', subject_id: '' });
     setIsFormOpen(true);
   };
 
   const handleCloseForm = () => {
     setIsFormOpen(false);
-    setFormData({ email: '', password: '', first_name: '', last_name: '', school_id: user?.school_id || '' });
+    setFormData({ email: '', password: '', first_name: '', last_name: '', department_id: '', subject_id: '' });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -126,6 +163,10 @@ const Teachers = () => {
       header: 'Email',
       accessor: 'email',
       sortable: true,
+    },
+    {
+      header: 'Department',
+      accessor: (row) => row.department?.name || 'Not Assigned',
     },
     {
       header: 'Created',
@@ -227,6 +268,44 @@ const Teachers = () => {
                   minLength={6}
                   className="rounded-2xl"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="department">Department (Optional)</Label>
+                <Select
+                  value={formData.department_id || undefined}
+                  onValueChange={(value) => setFormData({ ...formData, department_id: value })}
+                >
+                  <SelectTrigger className="rounded-2xl">
+                    <SelectValue placeholder="Select department (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((dept: any) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="subject">Subject of Teaching (Optional)</Label>
+                <Select
+                  value={formData.subject_id || undefined}
+                  onValueChange={(value) => setFormData({ ...formData, subject_id: value })}
+                >
+                  <SelectTrigger className="rounded-2xl">
+                    <SelectValue placeholder="Select subject (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subjects.map((subject: any) => (
+                      <SelectItem key={subject.id} value={subject.id}>
+                        {subject.name} ({subject.code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 

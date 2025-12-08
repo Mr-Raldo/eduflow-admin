@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { schoolAdminApi, Department, CreateDepartmentData } from '@/api/school-admin';
-import { schoolsApi } from '@/api/schools';
+import { schoolAdminApi, AcademicLevel, CreateAcademicLevelData } from '@/api/school-admin';
 import { DataTable, Column } from '@/components/tables/DataTable';
 import { Button } from '@/components/ui/button';
-import { Plus, Building2 } from 'lucide-react';
+import { Plus, GraduationCap } from 'lucide-react';
 import { toast } from 'sonner';
-import { useAuth } from '@/contexts/AuthContext';
 import {
   Dialog,
   DialogContent,
@@ -28,152 +26,122 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
-const Departments = () => {
+const AcademicLevels = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-
-  // Fetch the school info to get school_id
-  const { data: schools = [] } = useQuery({
-    queryKey: ['schools'],
-    queryFn: schoolsApi.getAll,
-  });
-
-  const schoolId = schools[0]?.id;
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const [editingDepartment, setEditingDepartment] = useState<Department | null>(null);
-  const [deletingDepartment, setDeletingDepartment] = useState<Department | null>(null);
-  const [formData, setFormData] = useState<CreateDepartmentData>({
+  const [editingLevel, setEditingLevel] = useState<AcademicLevel | null>(null);
+  const [deletingLevel, setDeletingLevel] = useState<AcademicLevel | null>(null);
+  const [formData, setFormData] = useState<CreateAcademicLevelData>({
     name: '',
     description: '',
-    hod_id: '',
+    display_order: 0,
   });
 
-  // Fetch departments for the school
-  const { data: departments = [], isLoading } = useQuery({
-    queryKey: ['departments', schoolId],
-    queryFn: () => schoolAdminApi.getDepartments(schoolId || ''),
-    enabled: !!schoolId,
+  // Fetch academic levels
+  const { data: academicLevels = [], isLoading } = useQuery({
+    queryKey: ['academicLevels'],
+    queryFn: schoolAdminApi.getAcademicLevels,
   });
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: (data: CreateDepartmentData) => {
-      console.log('🔵 [Department Create] Starting mutation with data:', data);
-      console.log('🔵 [Department Create] User context:', {
-        userId: user?.id,
-        schoolId: schoolId,
-        role: user?.role
-      });
-      return schoolAdminApi.createDepartment(data);
-    },
-    onSuccess: (response) => {
-      console.log('✅ [Department Create] Success! Response:', response);
-      queryClient.invalidateQueries({ queryKey: ['departments'] });
-      toast.success('Department created successfully');
+    mutationFn: schoolAdminApi.createAcademicLevel,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['academicLevels'] });
+      toast.success('Academic level created successfully');
       handleCloseForm();
     },
     onError: (error: any) => {
-      console.error('❌ [Department Create] Error:', error);
-      console.error('❌ [Department Create] Error response:', error.response);
-      console.error('❌ [Department Create] Error data:', error.response?.data);
-      toast.error(error.response?.data?.message || 'Failed to create department');
+      toast.error(error.response?.data?.message || 'Failed to create academic level');
     },
   });
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<CreateDepartmentData> }) =>
-      schoolAdminApi.updateDepartment(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Partial<CreateAcademicLevelData> }) =>
+      schoolAdminApi.updateAcademicLevel(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['departments'] });
-      toast.success('Department updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['academicLevels'] });
+      toast.success('Academic level updated successfully');
       handleCloseForm();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to update department');
+      toast.error(error.response?.data?.message || 'Failed to update academic level');
     },
   });
 
   // Delete mutation
   const deleteMutation = useMutation({
-    mutationFn: schoolAdminApi.deleteDepartment,
+    mutationFn: schoolAdminApi.deleteAcademicLevel,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['departments'] });
-      toast.success('Department deleted successfully');
+      queryClient.invalidateQueries({ queryKey: ['academicLevels'] });
+      toast.success('Academic level deleted successfully');
       setIsDeleteOpen(false);
-      setDeletingDepartment(null);
+      setDeletingLevel(null);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete department');
+      toast.error(error.response?.data?.message || 'Failed to delete academic level');
     },
   });
 
   const handleOpenCreate = () => {
-    setEditingDepartment(null);
+    setEditingLevel(null);
     setFormData({
       name: '',
       description: '',
-      hod_id: '',
+      display_order: 0,
     });
     setIsFormOpen(true);
   };
 
-  const handleOpenEdit = (department: Department) => {
-    setEditingDepartment(department);
+  const handleOpenEdit = (level: AcademicLevel) => {
+    setEditingLevel(level);
     setFormData({
-      name: department.name,
-      description: department.description || '',
-      hod_id: department.hod_id || '',
+      name: level.name,
+      description: level.description || '',
+      display_order: level.display_order || 0,
     });
     setIsFormOpen(true);
   };
 
   const handleCloseForm = () => {
     setIsFormOpen(false);
-    setEditingDepartment(null);
+    setEditingLevel(null);
     setFormData({
       name: '',
       description: '',
-      hod_id: '',
+      display_order: 0,
     });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('📤 [Department Submit] Form submitted');
-    console.log('📤 [Department Submit] Form data:', formData);
-    console.log('📤 [Department Submit] Editing department:', editingDepartment);
-
-    if (editingDepartment) {
-      console.log('📤 [Department Submit] Updating existing department:', editingDepartment.id);
-      updateMutation.mutate({ id: editingDepartment.id, data: formData });
+    if (editingLevel) {
+      updateMutation.mutate({ id: editingLevel.id, data: formData });
     } else {
-      console.log('📤 [Department Submit] Creating new department');
       createMutation.mutate(formData);
     }
   };
 
-  const handleDelete = (department: Department) => {
-    setDeletingDepartment(department);
+  const handleDelete = (level: AcademicLevel) => {
+    setDeletingLevel(level);
     setIsDeleteOpen(true);
   };
 
   const confirmDelete = () => {
-    if (deletingDepartment) {
-      deleteMutation.mutate(deletingDepartment.id);
+    if (deletingLevel) {
+      deleteMutation.mutate(deletingLevel.id);
     }
   };
 
-  const columns: Column<Department>[] = [
+  const columns: Column<AcademicLevel>[] = [
+    {
+      header: 'Order',
+      accessor: 'display_order',
+      sortable: true,
+    },
     {
       header: 'Name',
       accessor: 'name',
@@ -182,10 +150,6 @@ const Departments = () => {
     {
       header: 'Description',
       accessor: 'description',
-    },
-    {
-      header: 'Head of Department',
-      accessor: (row) => row.hod ? `${row.hod.first_name} ${row.hod.last_name}` : 'Not Assigned',
     },
     {
       header: 'Created',
@@ -206,28 +170,28 @@ const Departments = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
-            <Building2 className="w-8 h-8 text-super-admin" />
-            Departments Management
+            <GraduationCap className="w-8 h-8 text-primary" />
+            Academic Levels Management
           </h1>
           <p className="text-muted-foreground mt-1">
-            Manage departments in your school
+            Manage academic levels (Forms/Grades) in your school
           </p>
         </div>
         <Button
           onClick={handleOpenCreate}
-          className="rounded-2xl bg-super-admin hover:bg-super-admin/90"
+          className="rounded-2xl bg-primary hover:bg-primary/90"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Create Department
+          Create Academic Level
         </Button>
       </div>
 
       <DataTable
-        data={departments}
+        data={academicLevels}
         columns={columns}
         onEdit={handleOpenEdit}
         onDelete={handleDelete}
-        searchPlaceholder="Search departments..."
+        searchPlaceholder="Search academic levels..."
         searchKeys={['name', 'description']}
       />
 
@@ -237,52 +201,52 @@ const Departments = () => {
           <form onSubmit={handleSubmit}>
             <DialogHeader>
               <DialogTitle>
-                {editingDepartment ? 'Edit Department' : 'Create New Department'}
+                {editingLevel ? 'Edit Academic Level' : 'Create New Academic Level'}
               </DialogTitle>
               <DialogDescription>
-                {editingDepartment
-                  ? 'Update department information below'
-                  : 'Fill in the details to create a new department'}
+                {editingLevel
+                  ? 'Update academic level information below'
+                  : 'Fill in the details to create a new academic level'}
               </DialogDescription>
             </DialogHeader>
 
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Department Name *</Label>
+                <Label htmlFor="name">Name *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter department name"
+                  placeholder="Enter name (e.g., Form 1, Grade 9)"
                   required
                   className="rounded-2xl"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Enter department description"
+                <Label htmlFor="display_order">Display Order *</Label>
+                <Input
+                  id="display_order"
+                  type="number"
+                  value={formData.display_order}
+                  onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) })}
+                  placeholder="Enter order (1, 2, 3...)"
+                  required
+                  min="0"
                   className="rounded-2xl"
-                  rows={3}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="hod_id">Head of Department (Optional)</Label>
-                <Input
-                  id="hod_id"
-                  value={formData.hod_id}
-                  onChange={(e) => setFormData({ ...formData, hod_id: e.target.value })}
-                  placeholder="Enter teacher ID (optional)"
+                <Label htmlFor="description">Description (Optional)</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Enter description"
                   className="rounded-2xl"
+                  rows={3}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Leave blank if no HOD assigned yet
-                </p>
               </div>
             </div>
 
@@ -298,11 +262,11 @@ const Departments = () => {
               <Button
                 type="submit"
                 disabled={createMutation.isPending || updateMutation.isPending}
-                className="rounded-2xl bg-super-admin hover:bg-super-admin/90"
+                className="rounded-2xl bg-primary hover:bg-primary/90"
               >
                 {createMutation.isPending || updateMutation.isPending
                   ? 'Saving...'
-                  : editingDepartment
+                  : editingLevel
                   ? 'Update'
                   : 'Create'}
               </Button>
@@ -317,7 +281,7 @@ const Departments = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the department "{deletingDepartment?.name}". This action cannot be undone.
+              This will permanently delete the academic level "{deletingLevel?.name}". This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -336,4 +300,4 @@ const Departments = () => {
   );
 };
 
-export default Departments;
+export default AcademicLevels;

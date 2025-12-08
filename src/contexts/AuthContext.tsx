@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from '@/lib/axios';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
+import { handleError, handleSuccess } from '@/lib/errorHandler';
 
 interface User {
   id: string;
@@ -9,7 +9,6 @@ interface User {
   first_name: string;
   last_name: string;
   account_type: 'super_admin' | 'school_admin' | 'teacher' | 'student' | 'parent';
-  school_id?: string; // For school_admin - which school they manage
 }
 
 interface AuthContextType {
@@ -55,40 +54,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
       });
 
-      const { access_token, refresh_token, user: userData } = response.data;
+      // Validate response - backend may return 200 with error inside response.data
+      if (response.data.statusCode === 401 ||
+          response.data.status === 'failed' ||
+          response.data.error ||
+          !response.data.success ||
+          !response.data.token) {
+        const errorMessage = response.data.message ||
+                           response.data.error?.message ||
+                           'Invalid credentials. Please check your email and password.';
 
-      localStorage.setItem('access_token', access_token);
-      localStorage.setItem('refresh_token', refresh_token);
+        // Clear any partial data
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        setUser(null);
+
+        handleError({ message: errorMessage });
+        throw new Error(errorMessage);
+      }
+
+      const { token, user: userData } = response.data;
+
+      // Validate we have all required data
+      if (!token || !userData) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        setUser(null);
+
+        handleError({ message: 'Invalid response from server. Please try again.' });
+        throw new Error('Invalid login response');
+      }
+
+      // Store token as access_token for consistency with axios interceptor
+      localStorage.setItem('access_token', token);
+      // Backend doesn't provide refresh_token, store empty for now
+      localStorage.setItem('refresh_token', '');
 
       // Store user with correct frontend account_type
-      let userWithCorrectType: User = {
+      const userWithCorrectType: User = {
         ...userData,
         account_type: accountType as User['account_type'], // Keep frontend type (super_admin or school_admin)
       };
 
-      // If school_admin, fetch their schools and store first school_id
-      if (accountType === 'school_admin') {
-        try {
-          // Import administratorsApi dynamically to avoid circular dependency
-          const { administratorsApi } = await import('@/api/administrators');
-          const schools = await administratorsApi.getSchools(userData.id);
-
-          if (schools && schools.length > 0) {
-            userWithCorrectType.school_id = schools[0].school_id;
-          }
-        } catch (error) {
-          console.error('Failed to fetch school associations:', error);
-          // Continue login even if school fetch fails
-        }
-      }
-
       localStorage.setItem('user', JSON.stringify(userWithCorrectType));
       setUser(userWithCorrectType);
-      toast.success('Login successful!');
+      handleSuccess('Login successful!');
       navigate('/dashboard');
     } catch (error: any) {
-      const message = error.response?.data?.message || 'Login failed. Please check your credentials.';
-      toast.error(message);
+      // Clear any partial data on error
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user');
+      setUser(null);
+
+      // Error message is now properly formatted by axios interceptor
+      handleError(error, 'Login failed. Please check your credentials.');
       throw error;
     }
   };
@@ -98,7 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
     setUser(null);
-    toast.success('Logged out successfully');
+    handleSuccess('Logged out successfully');
     navigate('/login');
   };
 

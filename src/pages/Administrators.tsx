@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { administratorsApi, Administrator, CreateAdministratorData } from '@/api/administrators';
+import { schoolsApi } from '@/api/schools';
 import { DataTable, Column } from '@/components/tables/DataTable';
 import { Button } from '@/components/ui/button';
 import { Plus, Users } from 'lucide-react';
-import { toast } from 'sonner';
+import { handleError, handleSuccess } from '@/lib/errorHandler';
 import {
   Dialog,
   DialogContent,
@@ -44,15 +45,29 @@ const Administrators = () => {
     queryFn: administratorsApi.getAll,
   });
 
+  // Fetch schools for dropdown
+  const { data: schools = [] } = useQuery({
+    queryKey: ['schools'],
+    queryFn: schoolsApi.getAll,
+  });
+
   const createMutation = useMutation({
-    mutationFn: administratorsApi.create,
+    mutationFn: async (data: CreateAdministratorData) => {
+      // Create the administrator account
+      const admin = await administratorsApi.create(data);
+      console.log('Administrator created:', admin);
+      return admin;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['administrators'] });
-      toast.success('Administrator created successfully');
+      handleSuccess('Administrator created successfully');
       handleCloseForm();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to create administrator');
+      console.error('Full error object:', error);
+      console.error('Error response:', error.response);
+      console.error('Error data:', error.response?.data);
+      handleError(error, 'Failed to create administrator');
     },
   });
 
@@ -60,12 +75,12 @@ const Administrators = () => {
     mutationFn: administratorsApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['administrators'] });
-      toast.success('Administrator deleted successfully');
+      handleSuccess('Administrator deleted successfully');
       setIsDeleteOpen(false);
       setDeletingAdmin(null);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Failed to delete administrator');
+      handleError(error, 'Failed to delete administrator');
     },
   });
 
@@ -130,10 +145,10 @@ const Administrators = () => {
         <div>
           <h1 className="text-3xl font-bold flex items-center gap-3">
             <Users className="w-8 h-8 text-super-admin" />
-            Administrators Management
+            School Administrators
           </h1>
           <p className="text-muted-foreground mt-1">
-            Manage administrators in the system
+            Manage school administrator accounts
           </p>
         </div>
         <Button
@@ -164,6 +179,21 @@ const Administrators = () => {
             </DialogHeader>
 
             <div className="grid gap-4 py-4">
+              {schools.length > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="school">School</Label>
+                  <Input
+                    id="school"
+                    value={schools[0]?.school_name || 'No school configured'}
+                    disabled
+                    className="rounded-2xl bg-muted"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    This administrator will manage: {schools[0]?.school_name}
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="first_name">First Name *</Label>

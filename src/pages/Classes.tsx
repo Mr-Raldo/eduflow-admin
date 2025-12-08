@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -33,8 +34,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-const ACADEMIC_LEVELS = ['Primary', 'Secondary', 'A-Level', 'IB', 'Foundation', 'Undergraduate'];
-
 const Classes = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -43,9 +42,10 @@ const Classes = () => {
   const [editingClass, setEditingClass] = useState<Class | null>(null);
   const [deletingClass, setDeletingClass] = useState<Class | null>(null);
   const [formData, setFormData] = useState<CreateClassData>({
-    teacher_in_charge: '',
-    academic_level: '',
-    subject_id: '',
+    name: '',
+    academic_level_id: '',
+    class_teacher_id: '',
+    capacity: 40,
   });
 
   // Fetch classes
@@ -54,18 +54,16 @@ const Classes = () => {
     queryFn: schoolAdminApi.getClasses,
   });
 
-  // Fetch subjects for dropdown
-  const { data: subjects = [] } = useQuery({
-    queryKey: ['subjects', user?.school_id],
-    queryFn: () => schoolAdminApi.getSubjects(user?.school_id || ''),
-    enabled: !!user?.school_id,
+  // Fetch academic levels for dropdown
+  const { data: academicLevels = [] } = useQuery({
+    queryKey: ['academicLevels'],
+    queryFn: schoolAdminApi.getAcademicLevels,
   });
 
   // Fetch teachers for dropdown
   const { data: teachers = [] } = useQuery({
-    queryKey: ['teachers', user?.school_id],
-    queryFn: () => schoolAdminApi.getSchoolTeachers(user?.school_id || ''),
-    enabled: !!user?.school_id,
+    queryKey: ['teachers'],
+    queryFn: () => schoolAdminApi.getSchoolTeachers(''),
   });
 
   // Create mutation
@@ -112,9 +110,10 @@ const Classes = () => {
   const handleOpenCreate = () => {
     setEditingClass(null);
     setFormData({
-      teacher_in_charge: '',
-      academic_level: '',
-      subject_id: '',
+      name: '',
+      academic_level_id: '',
+      class_teacher_id: '',
+      capacity: 40,
     });
     setIsFormOpen(true);
   };
@@ -122,9 +121,10 @@ const Classes = () => {
   const handleOpenEdit = (classItem: Class) => {
     setEditingClass(classItem);
     setFormData({
-      teacher_in_charge: classItem.teacher_in_charge,
-      academic_level: classItem.academic_level,
-      subject_id: classItem.subject_id,
+      name: classItem.name,
+      academic_level_id: classItem.academic_level_id || '',
+      class_teacher_id: classItem.class_teacher_id || '',
+      capacity: classItem.capacity,
     });
     setIsFormOpen(true);
   };
@@ -133,9 +133,10 @@ const Classes = () => {
     setIsFormOpen(false);
     setEditingClass(null);
     setFormData({
-      teacher_in_charge: '',
-      academic_level: '',
-      subject_id: '',
+      name: '',
+      academic_level_id: '',
+      class_teacher_id: '',
+      capacity: 40,
     });
   };
 
@@ -161,17 +162,22 @@ const Classes = () => {
 
   const columns: Column<Class>[] = [
     {
-      header: 'Academic Level',
-      accessor: 'academic_level',
+      header: 'Class Name',
+      accessor: 'name',
       sortable: true,
     },
     {
-      header: 'Subject ID',
-      accessor: 'subject_id',
+      header: 'Academic Level',
+      accessor: (row) => row.academic_level?.name || 'Not Assigned',
+      sortable: true,
     },
     {
-      header: 'Teacher ID',
-      accessor: 'teacher_in_charge',
+      header: 'Capacity',
+      accessor: 'capacity',
+    },
+    {
+      header: 'Created',
+      accessor: (row) => new Date(row.created_at).toLocaleDateString(),
     },
   ];
 
@@ -230,40 +236,54 @@ const Classes = () => {
 
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="subject">Subject *</Label>
+                <Label htmlFor="name">Class Name *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Enter class name (e.g., Form 1A)"
+                  required
+                  className="rounded-2xl"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="academic_level">Academic Level *</Label>
                 <Select
-                  value={formData.subject_id}
-                  onValueChange={(value) => setFormData({ ...formData, subject_id: value })}
+                  value={formData.academic_level_id || undefined}
+                  onValueChange={(value) => setFormData({ ...formData, academic_level_id: value })}
                   required
                 >
                   <SelectTrigger className="rounded-2xl">
-                    <SelectValue placeholder="Select subject" />
+                    <SelectValue placeholder="Select academic level" />
                   </SelectTrigger>
                   <SelectContent>
-                    {subjects.length === 0 ? (
+                    {academicLevels.length === 0 ? (
                       <SelectItem value="none" disabled>
-                        No subjects available
+                        No academic levels available. Create them first.
                       </SelectItem>
                     ) : (
-                      subjects.map((subject: any) => (
-                        <SelectItem key={subject.id} value={subject.id}>
-                          {subject.name}
+                      academicLevels.map((level: any) => (
+                        <SelectItem key={level.id} value={level.id}>
+                          {level.name}
                         </SelectItem>
                       ))
                     )}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  Students will inherit subjects from this academic level
+                </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="teacher">Teacher in Charge *</Label>
+                <Label htmlFor="teacher">Class Teacher (Optional)</Label>
                 <Select
-                  value={formData.teacher_in_charge}
-                  onValueChange={(value) => setFormData({ ...formData, teacher_in_charge: value })}
-                  required
+                  value={formData.class_teacher_id || undefined}
+                  onValueChange={(value) => setFormData({ ...formData, class_teacher_id: value })}
                 >
                   <SelectTrigger className="rounded-2xl">
-                    <SelectValue placeholder="Select teacher" />
+                    <SelectValue placeholder="Select class teacher (optional)" />
                   </SelectTrigger>
                   <SelectContent>
                     {teachers.length === 0 ? (
@@ -282,23 +302,17 @@ const Classes = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="academic_level">Academic Level *</Label>
-                <Select
-                  value={formData.academic_level}
-                  onValueChange={(value) => setFormData({ ...formData, academic_level: value })}
+                <Label htmlFor="capacity">Capacity *</Label>
+                <Input
+                  id="capacity"
+                  type="number"
+                  value={formData.capacity}
+                  onChange={(e) => setFormData({ ...formData, capacity: parseInt(e.target.value) || 40 })}
+                  placeholder="Enter class capacity"
                   required
-                >
-                  <SelectTrigger className="rounded-2xl">
-                    <SelectValue placeholder="Select academic level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ACADEMIC_LEVELS.map((level) => (
-                      <SelectItem key={level} value={level}>
-                        {level}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  min="1"
+                  className="rounded-2xl"
+                />
               </div>
             </div>
 

@@ -27,33 +27,33 @@ interface ApiResponse<T> {
 }
 
 export const teachersApi = {
-  // FIXED: /teacher not /teachers
+  // Teacher endpoints - aligned with backend
   getAll: async () => {
-    const response = await api.get<ApiResponse<Teacher[]>>('/teacher');
-    return response.data.data; // Extract data from wrapper
+    // Backend doesn't have list endpoint - use admin endpoint
+    const response = await api.get<ApiResponse<Teacher[]>>('/admin/users?role=teacher');
+    return response.data.data || [];
   },
 
   getById: async (id: string) => {
-    const response = await api.get<ApiResponse<Teacher>>(`/teacher/${id}`);
-    return response.data.data; // Extract data from wrapper
+    const response = await api.get<ApiResponse<Teacher>>(`/admin/users/${id}`);
+    return response.data.data;
   },
 
   create: async (data: CreateTeacherData) => {
-    const response = await api.post('/auth/create-account', data, {
-      params: { account_type: 'teacher' },
+    // Uses admin register endpoint with role=teacher
+    const response = await api.post('/auth/register', {
+      ...data,
+      role: 'teacher'
     });
     return response.data;
   },
 
   update: async (id: string, data: Partial<Omit<CreateTeacherData, 'password'>>) => {
-    const response = await api.patch<ApiResponse<Teacher>>('/teacher', {
-      id,
-      ...data,
-    });
-    return response.data.data; // Extract data from wrapper
+    const response = await api.put<ApiResponse<Teacher>>(`/admin/users/${id}`, data);
+    return response.data.data;
   },
 
   delete: async (id: string) => {
-    await api.delete(`/teacher/${id}`);
+    await api.delete(`/admin/users/${id}`);
   },
 };

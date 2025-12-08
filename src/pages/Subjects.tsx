@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { schoolAdminApi, Subject, CreateSubjectData } from '@/api/school-admin';
+import { schoolsApi } from '@/api/schools';
 import { DataTable, Column } from '@/components/tables/DataTable';
 import { Button } from '@/components/ui/button';
 import { Plus, BookOpen } from 'lucide-react';
@@ -16,6 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -23,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,51 +37,74 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-const ACADEMIC_LEVELS = ['Primary', 'Secondary', 'A-Level', 'IB', 'Foundation', 'Undergraduate'];
-
 const Subjects = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  // Fetch the school info to get school_id
+  const { data: schools = [] } = useQuery({
+    queryKey: ['schools'],
+    queryFn: schoolsApi.getAll,
+  });
+
+  const schoolId = schools[0]?.id;
+
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [deletingSubject, setDeletingSubject] = useState<Subject | null>(null);
+  const [selectedAcademicLevels, setSelectedAcademicLevels] = useState<string[]>([]);
   const [formData, setFormData] = useState<CreateSubjectData>({
     name: '',
-    academic_level: '',
-    department: '',
-    teacher_in_charge: '',
-    school_id: user?.school_id || '',
+    code: '',
     department_id: '',
+    description: '',
   });
 
   // Fetch subjects
   const { data: subjects = [], isLoading } = useQuery({
-    queryKey: ['subjects', user?.school_id],
-    queryFn: () => schoolAdminApi.getSubjects(user?.school_id || ''),
-    enabled: !!user?.school_id,
+    queryKey: ['subjects', schoolId],
+    queryFn: () => schoolAdminApi.getSubjects(schoolId || ''),
+    enabled: !!schoolId,
   });
 
   // Fetch departments for dropdown
   const { data: departments = [] } = useQuery({
-    queryKey: ['departments', user?.school_id],
-    queryFn: () => schoolAdminApi.getDepartments(user?.school_id || ''),
-    enabled: !!user?.school_id,
+    queryKey: ['departments', schoolId],
+    queryFn: () => schoolAdminApi.getDepartments(schoolId || ''),
+    enabled: !!schoolId,
   });
 
-  // Fetch teachers for dropdown
-  const { data: teachers = [] } = useQuery({
-    queryKey: ['teachers', user?.school_id],
-    queryFn: () => schoolAdminApi.getSchoolTeachers(user?.school_id || ''),
-    enabled: !!user?.school_id,
+  // Fetch academic levels for assignment
+  const { data: academicLevels = [] } = useQuery({
+    queryKey: ['academicLevels'],
+    queryFn: schoolAdminApi.getAcademicLevels,
   });
 
   // Create mutation
   const createMutation = useMutation({
     mutationFn: schoolAdminApi.createSubject,
-    onSuccess: () => {
+    onSuccess: async (createdSubject) => {
+      // Assign subject to selected academic levels
+      if (selectedAcademicLevels.length > 0) {
+        try {
+          await Promise.all(
+            selectedAcademicLevels.map((levelId) =>
+              schoolAdminApi.assignSubjectToAcademicLevel({
+                academic_level_id: levelId,
+                subject_id: createdSubject.id,
+                is_required: true,
+              })
+            )
+          );
+          toast.success('Subject created and assigned to academic levels successfully');
+        } catch (error) {
+          toast.warning('Subject created but failed to assign to some academic levels');
+        }
+      } else {
+        toast.success('Subject created successfully');
+      }
       queryClient.invalidateQueries({ queryKey: ['subjects'] });
-      toast.success('Subject created successfully');
       handleCloseForm();
     },
     onError: (error: any) => {
@@ -116,26 +142,24 @@ const Subjects = () => {
 
   const handleOpenCreate = () => {
     setEditingSubject(null);
+    setSelectedAcademicLevels([]);
     setFormData({
       name: '',
-      academic_level: '',
-      department: '',
-      teacher_in_charge: '',
-      school_id: user?.school_id || '',
+      code: '',
       department_id: '',
+      description: '',
     });
     setIsFormOpen(true);
   };
 
   const handleOpenEdit = (subject: Subject) => {
     setEditingSubject(subject);
+    setSelectedAcademicLevels([]);
     setFormData({
       name: subject.name,
-      academic_level: subject.academic_level,
-      department: subject.department || '',
-      teacher_in_charge: subject.teacher_in_charge || '',
-      school_id: subject.school_id,
-      department_id: subject.department_id,
+      code: subject.code,
+      department_id: subject.department_id || '',
+      description: subject.description || '',
     });
     setIsFormOpen(true);
   };
@@ -143,13 +167,12 @@ const Subjects = () => {
   const handleCloseForm = () => {
     setIsFormOpen(false);
     setEditingSubject(null);
+    setSelectedAcademicLevels([]);
     setFormData({
       name: '',
-      academic_level: '',
-      department: '',
-      teacher_in_charge: '',
-      school_id: user?.school_id || '',
+      code: '',
       department_id: '',
+      description: '',
     });
   };
 
@@ -180,23 +203,19 @@ const Subjects = () => {
       sortable: true,
     },
     {
-      header: 'Academic Level',
-      accessor: 'academic_level',
+      header: 'Code',
+      accessor: 'code',
       sortable: true,
     },
     {
-      header: 'Code',
-      accessor: 'code',
+      header: 'Department',
+      accessor: (row) => row.department?.name || 'Not Assigned',
+    },
+    {
+      header: 'Description',
+      accessor: 'description',
     },
   ];
-
-  if (!user?.school_id) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">No school context available.</p>
-      </div>
-    );
-  }
 
   if (isLoading) {
     return (
@@ -258,26 +277,37 @@ const Subjects = () => {
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter subject name"
+                  placeholder="Enter subject name (e.g., Mathematics)"
                   required
                   className="rounded-2xl"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="academic_level">Academic Level *</Label>
-                <Select
-                  value={formData.academic_level}
-                  onValueChange={(value) => setFormData({ ...formData, academic_level: value })}
+                <Label htmlFor="code">Subject Code *</Label>
+                <Input
+                  id="code"
+                  value={formData.code}
+                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                  placeholder="Enter subject code (e.g., MATH101)"
                   required
+                  className="rounded-2xl"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="department">Department (Optional)</Label>
+                <Select
+                  value={formData.department_id || undefined}
+                  onValueChange={(value) => setFormData({ ...formData, department_id: value })}
                 >
                   <SelectTrigger className="rounded-2xl">
-                    <SelectValue placeholder="Select academic level" />
+                    <SelectValue placeholder="Select department (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    {ACADEMIC_LEVELS.map((level) => (
-                      <SelectItem key={level} value={level}>
-                        {level}
+                    {departments.map((dept: any) => (
+                      <SelectItem key={dept.id} value={dept.id}>
+                        {dept.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -285,54 +315,52 @@ const Subjects = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
-                <Select
-                  value={formData.department_id}
-                  onValueChange={(value) => setFormData({ ...formData, department_id: value, department: value })}
-                >
-                  <SelectTrigger className="rounded-2xl">
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.length === 0 ? (
-                      <SelectItem value="none" disabled>
-                        No departments available
-                      </SelectItem>
-                    ) : (
-                      departments.map((dept: any) => (
-                        <SelectItem key={dept.id} value={dept.id}>
-                          {dept.name}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="description">Description (Optional)</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Enter subject description"
+                  className="rounded-2xl"
+                  rows={3}
+                />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="teacher">Teacher in Charge</Label>
-                <Select
-                  value={formData.teacher_in_charge}
-                  onValueChange={(value) => setFormData({ ...formData, teacher_in_charge: value })}
-                >
-                  <SelectTrigger className="rounded-2xl">
-                    <SelectValue placeholder="Select teacher" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {teachers.length === 0 ? (
-                      <SelectItem value="none" disabled>
-                        No teachers available
-                      </SelectItem>
+              {!editingSubject && (
+                <div className="space-y-3">
+                  <Label>Assign to Academic Levels (Optional)</Label>
+                  <div className="space-y-2 border rounded-2xl p-4 max-h-48 overflow-y-auto">
+                    {academicLevels.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No academic levels available. Create them first.</p>
                     ) : (
-                      teachers.map((teacher: any) => (
-                        <SelectItem key={teacher.id} value={teacher.id}>
-                          {teacher.first_name} {teacher.last_name}
-                        </SelectItem>
+                      academicLevels.map((level: any) => (
+                        <div key={level.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`level-${level.id}`}
+                            checked={selectedAcademicLevels.includes(level.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedAcademicLevels([...selectedAcademicLevels, level.id]);
+                              } else {
+                                setSelectedAcademicLevels(selectedAcademicLevels.filter(id => id !== level.id));
+                              }
+                            }}
+                          />
+                          <label
+                            htmlFor={`level-${level.id}`}
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                          >
+                            {level.name} {level.description && `- ${level.description}`}
+                          </label>
+                        </div>
                       ))
                     )}
-                  </SelectContent>
-                </Select>
-              </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Select which academic levels this subject will be taught in
+                  </p>
+                </div>
+              )}
             </div>
 
             <DialogFooter>

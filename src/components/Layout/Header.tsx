@@ -9,7 +9,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Menu, LogOut, User } from 'lucide-react';
+import { Menu, LogOut, User, School } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { administratorsApi } from '@/api/administrators';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -18,8 +20,18 @@ interface HeaderProps {
 const Header = ({ onToggleSidebar }: HeaderProps) => {
   const { user, logout, getRoleColor } = useAuth();
 
+  // Fetch school information for school admins
+  const { data: schools = [] } = useQuery({
+    queryKey: ['admin-schools', user?.id],
+    queryFn: () => administratorsApi.getSchools(user?.id || ''),
+    enabled: !!user?.id && user.account_type === 'school_admin',
+  });
+
   const getInitials = () => {
     if (!user) return 'U';
+    if (!user.first_name || !user.last_name) {
+      return user.email.charAt(0).toUpperCase();
+    }
     return `${user.first_name.charAt(0)}${user.last_name.charAt(0)}`.toUpperCase();
   };
 
@@ -66,6 +78,12 @@ const Header = ({ onToggleSidebar }: HeaderProps) => {
                     {user?.first_name} {user?.last_name}
                   </p>
                   <p className="text-xs text-muted-foreground">{getRoleName()}</p>
+                  {user?.account_type === 'school_admin' && schools.length > 0 && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                      <School className="w-3 h-3" />
+                      {schools[0].school?.name || 'School'}
+                    </p>
+                  )}
                 </div>
               </Button>
             </DropdownMenuTrigger>

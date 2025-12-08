@@ -49,6 +49,7 @@ const Parents = () => {
     first_name: '',
     last_name: '',
     phone: '',
+    school_id: user?.school_id || '',  // From logged-in school admin
   });
 
   // Fetch parents
@@ -58,11 +59,12 @@ const Parents = () => {
   });
 
   // Fetch students for linking
-  const { data: students = [] } = useQuery({
-    queryKey: ['students', user?.school_id],
-    queryFn: () => schoolAdminApi.getSchoolStudents(user?.school_id || ''),
-    enabled: !!user?.school_id,
+  const { data: students = [], isLoading: studentsLoading } = useQuery({
+    queryKey: ['students'],
+    queryFn: () => schoolAdminApi.getSchoolStudents(''),
   });
+
+  console.log('Available students for parent linking:', students);
 
   // Create mutation with student linking
   const createMutation = useMutation({
@@ -146,6 +148,7 @@ const Parents = () => {
       first_name: '',
       last_name: '',
       phone: '',
+      school_id: user?.school_id || '',  // From logged-in school admin
     });
     setIsFormOpen(true);
   };
@@ -172,6 +175,7 @@ const Parents = () => {
       first_name: '',
       last_name: '',
       phone: '',
+      school_id: user?.school_id || '',  // From logged-in school admin
     });
   };
 

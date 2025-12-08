@@ -39,14 +39,17 @@ const Sidebar = ({ isCollapsed }: SidebarProps) => {
       ],
       school_admin: [
         { label: 'Departments', href: '/departments', icon: Building2 },
-        { label: 'Subjects', href: '/subjects', icon: BookOpen },
+        { label: 'Academic Levels', href: '/academic-levels', icon: GraduationCap },
+        { label: 'Subjects', href: '/admin-subjects', icon: BookOpen },
         { label: 'Teachers', href: '/teachers', icon: GraduationCap },
         { label: 'Students', href: '/students', icon: Users },
         { label: 'Parents', href: '/parents', icon: UserCircle },
         { label: 'Classes', href: '/classes', icon: School },
+        { label: 'Teacher Assignments', href: '/teacher-assignments', icon: Users },
       ],
       teacher: [
         { label: 'My Classes', href: '/my-classes', icon: School },
+        { label: 'Subjects', href: '/subjects', icon: BookOpen },
         { label: 'Syllabi', href: '/syllabi', icon: FileText },
         { label: 'Assignments', href: '/assignments', icon: BookOpen },
         { label: 'Resources', href: '/resources', icon: FolderOpen },
@@ -54,7 +57,7 @@ const Sidebar = ({ isCollapsed }: SidebarProps) => {
       student: [
         { label: 'My Classes', href: '/my-classes', icon: School },
         { label: 'Assignments', href: '/my-assignments', icon: BookOpen },
-        { label: 'Grades', href: '/grades', icon: FileText },
+        { label: 'Grades', href: '/my-grades', icon: FileText },
       ],
       parent: [
         { label: 'Children', href: '/children', icon: Users },

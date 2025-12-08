@@ -2,19 +2,28 @@ import api from '@/lib/api';
 
 export interface School {
   id: string;
-  name: string;
+  school_name: string;
+  school_logo?: string;
   address?: string;
   phone?: string;
   email?: string;
+  website?: string;
+  current_term?: string;
+  term_start_date?: string;
+  term_end_date?: string;
   created_at: string;
   updated_at: string;
 }
 
 export interface CreateSchoolData {
-  name: string;
+  school_name: string;
   address?: string;
   phone?: string;
   email?: string;
+  website?: string;
+  current_term?: string;
+  term_start_date?: string;
+  term_end_date?: string;
 }
 
 export interface UpdateSchoolData extends CreateSchoolData {
@@ -22,44 +31,45 @@ export interface UpdateSchoolData extends CreateSchoolData {
 }
 
 // Backend response wrapper
-interface ApiResponse<T> {
-  statusCode: number;
-  message: string;
-  data: T;
+interface ApiResponse {
+  success: boolean;
+  message?: string;
+  school: School;
 }
 
 export const schoolsApi = {
-  // Get all schools - FIXED: /school-administrator endpoint
-  getAll: async () => {
-    const response = await api.get<ApiResponse<School[]>>('/school-administrator');
-    return response.data.data; // Extract data from wrapper
+  // Get school info - Backend only stores ONE school's information
+  getAll: async (): Promise<School[]> => {
+    // Backend: GET /api/admin/school (returns single school info)
+    const response = await api.get<ApiResponse>('/admin/school');
+    // Convert to array for compatibility with table display
+    return response.data.school ? [response.data.school] : [];
   },
 
   // Get single school
-  getById: async (id: string) => {
-    const response = await api.get<ApiResponse<School>>(`/school-administrator/${id}`);
-    return response.data.data; // Extract data from wrapper
+  getById: async (id: string): Promise<School> => {
+    // Backend: GET /api/admin/school (doesn't support ID lookup)
+    const response = await api.get<ApiResponse>('/admin/school');
+    return response.data.school;
   },
 
-  // Create school - Super Admin creates school via /super-administrator/school-administrator
-  create: async (data: CreateSchoolData) => {
-    const response = await api.post<ApiResponse<School>>('/super-administrator/school-administrator', data);
-    return response.data.data; // Extract data from wrapper
+  // Create school - Backend doesn't support creating new schools
+  // Instead, it updates the existing school_info record
+  create: async (data: CreateSchoolData): Promise<School> => {
+    // Backend only has one school_info record, so "create" is actually an update
+    const response = await api.put<ApiResponse>('/admin/school', data);
+    return response.data.school;
   },
 
-  // Update school - FIXED: Send id in body, not URL
-  update: async (id: string, data: Partial<CreateSchoolData>) => {
-    const updateData: UpdateSchoolData = {
-      id,
-      name: data.name || '',
-      ...data,
-    };
-    const response = await api.patch<ApiResponse<School>>('/school-administrator', updateData);
-    return response.data.data; // Extract data from wrapper
+  // Update school
+  update: async (id: string, data: Partial<CreateSchoolData>): Promise<School> => {
+    // Backend: PUT /api/admin/school
+    const response = await api.put<ApiResponse>('/admin/school', data);
+    return response.data.school;
   },
 
-  // Delete school
-  delete: async (id: string) => {
-    await api.delete(`/school-administrator/${id}`);
+  // Delete school - Not available in backend (school info is required)
+  delete: async (id: string): Promise<void> => {
+    throw new Error('Deleting school information is not supported');
   },
 };

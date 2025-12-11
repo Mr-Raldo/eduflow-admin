@@ -1,5 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+<<<<<<< HEAD
 import { Users, School, BookOpen, GraduationCap, FileText, TrendingUp, Calendar, Clock, Download, FolderOpen } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { schoolAdminApi } from '@/api/school-admin';
@@ -8,29 +9,28 @@ import { teacherApi } from '@/api/teacher';
 import { parentApi } from '@/api/parent';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
+=======
+import { Users, School, BookOpen, GraduationCap, FileText, TrendingUp } from 'lucide-react';
+>>>>>>> 76f84c8f94dea8c713170403af83ef2e0423f5db
 
 const Dashboard = () => {
-  const { user, getRoleGradient } = useAuth();
+  const { profile, getRoleGradient, hasRole } = useAuth();
 
   const getRoleDashboard = () => {
-    if (!user) return null;
-
-    const dashboards: Record<string, JSX.Element> = {
-      super_admin: <SuperAdminDashboard />,
-      school_admin: <SchoolAdminDashboard />,
-      teacher: <TeacherDashboard />,
-      student: <StudentDashboard />,
-      parent: <ParentDashboard />,
-    };
-
-    return dashboards[user.account_type] || null;
+    if (hasRole('admin')) return <AdminDashboard />;
+    if (hasRole('headmaster')) return <HeadmasterDashboard />;
+    if (hasRole('hod')) return <HODDashboard />;
+    if (hasRole('teacher')) return <TeacherDashboard />;
+    if (hasRole('student')) return <StudentDashboard />;
+    if (hasRole('parent')) return <ParentDashboard />;
+    return null;
   };
 
   return (
     <div className="space-y-6">
       <div className={`${getRoleGradient()} rounded-3xl p-8 text-white`}>
         <h1 className="text-3xl font-bold mb-2">
-          Welcome back, {user?.first_name}!
+          Welcome back, {profile?.first_name || 'User'}!
         </h1>
         <p className="text-white/90">
           Here's what's happening with your education platform today.
@@ -42,7 +42,7 @@ const Dashboard = () => {
   );
 };
 
-const SuperAdminDashboard = () => {
+const AdminDashboard = () => {
   const stats = [
     { label: 'Total Schools', value: '24', icon: School, color: 'text-super-admin' },
     { label: 'Administrators', value: '156', icon: Users, color: 'text-super-admin' },
@@ -69,6 +69,7 @@ const SuperAdminDashboard = () => {
   );
 };
 
+<<<<<<< HEAD
 const SchoolAdminDashboard = () => {
   const { user } = useAuth();
 
@@ -132,6 +133,41 @@ const SchoolAdminDashboard = () => {
       icon: Users,
       color: 'text-parent'
     },
+=======
+const HeadmasterDashboard = () => {
+  const stats = [
+    { label: 'Departments', value: '8', icon: BookOpen, color: 'text-super-admin' },
+    { label: 'Teachers', value: '45', icon: GraduationCap, color: 'text-teacher' },
+    { label: 'Students', value: '1,234', icon: Users, color: 'text-student' },
+    { label: 'Classes', value: '32', icon: School, color: 'text-parent' },
+  ];
+
+  return (
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      {stats.map((stat) => (
+        <Card key={stat.label} className="rounded-3xl border-none shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {stat.label}
+            </CardTitle>
+            <stat.icon className={`w-5 h-5 ${stat.color}`} />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold">{stat.value}</div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+};
+
+const HODDashboard = () => {
+  const stats = [
+    { label: 'Subjects', value: '6', icon: BookOpen, color: 'text-super-admin' },
+    { label: 'Teachers', value: '12', icon: GraduationCap, color: 'text-teacher' },
+    { label: 'Resources', value: '145', icon: FileText, color: 'text-parent' },
+    { label: 'Pending Approvals', value: '8', icon: TrendingUp, color: 'text-student' },
+>>>>>>> 76f84c8f94dea8c713170403af83ef2e0423f5db
   ];
 
   return (

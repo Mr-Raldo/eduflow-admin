@@ -5,7 +5,7 @@ import Layout from '@/components/Layout/Layout';
 import { Toaster } from 'sonner';
 
 // Pages
-import Login from '@/pages/Login';
+import Auth from '@/pages/Auth';
 import Dashboard from '@/pages/Dashboard';
 import Schools from '@/pages/Schools';
 import Administrators from '@/pages/Administrators';
@@ -35,7 +35,8 @@ function App() {
         <Toaster position="top-right" richColors />
         <Routes>
           {/* Public Routes */}
-          <Route path="/login" element={<Login />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/login" element={<Navigate to="/auth" replace />} />
 
           {/* Protected Routes */}
           <Route
@@ -52,11 +53,11 @@ function App() {
             {/* Dashboard - All roles */}
             <Route path="dashboard" element={<Dashboard />} />
 
-            {/* Super Admin Only Routes */}
+            {/* Admin Only Routes */}
             <Route
               path="schools"
               element={
-                <ProtectedRoute allowedRoles={['super_admin']}>
+                <ProtectedRoute allowedRoles={['admin']}>
                   <Schools />
                 </ProtectedRoute>
               }
@@ -64,17 +65,17 @@ function App() {
             <Route
               path="administrators"
               element={
-                <ProtectedRoute allowedRoles={['super_admin']}>
+                <ProtectedRoute allowedRoles={['admin']}>
                   <Administrators />
                 </ProtectedRoute>
               }
             />
 
-            {/* School Administrator Routes */}
+            {/* Admin & Headmaster Routes */}
             <Route
               path="departments"
               element={
-                <ProtectedRoute allowedRoles={['school_admin']}>
+                <ProtectedRoute allowedRoles={['admin', 'headmaster', 'hod']}>
                   <Departments />
                 </ProtectedRoute>
               }
@@ -90,7 +91,7 @@ function App() {
             <Route
               path="admin-subjects"
               element={
-                <ProtectedRoute allowedRoles={['school_admin']}>
+                <ProtectedRoute allowedRoles={['admin', 'headmaster', 'hod']}>
                   <Subjects />
                 </ProtectedRoute>
               }
@@ -98,7 +99,7 @@ function App() {
             <Route
               path="teachers"
               element={
-                <ProtectedRoute allowedRoles={['school_admin']}>
+                <ProtectedRoute allowedRoles={['admin', 'headmaster']}>
                   <Teachers />
                 </ProtectedRoute>
               }
@@ -106,7 +107,7 @@ function App() {
             <Route
               path="students"
               element={
-                <ProtectedRoute allowedRoles={['school_admin']}>
+                <ProtectedRoute allowedRoles={['admin', 'headmaster', 'teacher']}>
                   <Students />
                 </ProtectedRoute>
               }
@@ -114,7 +115,7 @@ function App() {
             <Route
               path="parents"
               element={
-                <ProtectedRoute allowedRoles={['school_admin']}>
+                <ProtectedRoute allowedRoles={['admin', 'headmaster']}>
                   <Parents />
                 </ProtectedRoute>
               }
@@ -122,7 +123,7 @@ function App() {
             <Route
               path="classes"
               element={
-                <ProtectedRoute allowedRoles={['school_admin', 'teacher']}>
+                <ProtectedRoute allowedRoles={['admin', 'headmaster', 'teacher']}>
                   <Classes />
                 </ProtectedRoute>
               }

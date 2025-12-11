@@ -11,6 +11,8 @@ import {
   GraduationCap,
   UserCircle,
   ChevronRight,
+  Bell,
+  ClipboardList,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -19,11 +21,9 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ isCollapsed }: SidebarProps) => {
-  const { user } = useAuth();
+  const { hasRole, getPrimaryRole } = useAuth();
 
   const getNavigationItems = () => {
-    if (!user) return [];
-
     const baseItems = [
       {
         label: 'Dashboard',
@@ -32,18 +32,26 @@ const Sidebar = ({ isCollapsed }: SidebarProps) => {
       },
     ];
 
-    const roleBasedItems: Record<string, any[]> = {
-      super_admin: [
+    const items: any[] = [...baseItems];
+
+    // Admin routes
+    if (hasRole('admin')) {
+      items.push(
         { label: 'Schools', href: '/schools', icon: School },
-        { label: 'Administrators', href: '/administrators', icon: Users },
-      ],
-      school_admin: [
+        { label: 'Administrators', href: '/administrators', icon: Users }
+      );
+    }
+
+    // Admin & Headmaster routes
+    if (hasRole('admin') || hasRole('headmaster')) {
+      items.push(
         { label: 'Departments', href: '/departments', icon: Building2 },
         { label: 'Academic Levels', href: '/academic-levels', icon: GraduationCap },
         { label: 'Subjects', href: '/admin-subjects', icon: BookOpen },
         { label: 'Teachers', href: '/teachers', icon: GraduationCap },
         { label: 'Students', href: '/students', icon: Users },
         { label: 'Parents', href: '/parents', icon: UserCircle },
+<<<<<<< HEAD
         { label: 'Classes', href: '/classes', icon: School },
         { label: 'Teacher Assignments', href: '/teacher-assignments', icon: Users },
       ],
@@ -64,8 +72,52 @@ const Sidebar = ({ isCollapsed }: SidebarProps) => {
         { label: 'Performance', href: '/performance', icon: FileText },
       ],
     };
+=======
+        { label: 'Classes', href: '/classes', icon: School }
+      );
+    }
+>>>>>>> 76f84c8f94dea8c713170403af83ef2e0423f5db
 
-    return [...baseItems, ...(roleBasedItems[user.account_type] || [])];
+    // HOD routes
+    if (hasRole('hod')) {
+      items.push(
+        { label: 'My Department', href: '/departments', icon: Building2 },
+        { label: 'Subjects', href: '/subjects', icon: BookOpen }
+      );
+    }
+
+    // Teacher routes
+    if (hasRole('teacher')) {
+      items.push(
+        { label: 'My Classes', href: '/classes', icon: School },
+        { label: 'Assignments', href: '/assignments', icon: ClipboardList },
+        { label: 'Resources', href: '/resources', icon: FolderOpen }
+      );
+    }
+
+    // Student routes
+    if (hasRole('student')) {
+      items.push(
+        { label: 'My Classes', href: '/my-classes', icon: School },
+        { label: 'Assignments', href: '/my-assignments', icon: ClipboardList },
+        { label: 'Grades', href: '/grades', icon: FileText }
+      );
+    }
+
+    // Parent routes
+    if (hasRole('parent')) {
+      items.push(
+        { label: 'My Children', href: '/children', icon: Users },
+        { label: 'Performance', href: '/performance', icon: FileText }
+      );
+    }
+
+    // Remove duplicates based on href
+    const uniqueItems = items.filter((item, index, self) => 
+      index === self.findIndex(t => t.href === item.href)
+    );
+
+    return uniqueItems;
   };
 
   const navigationItems = getNavigationItems();
@@ -83,7 +135,7 @@ const Sidebar = ({ isCollapsed }: SidebarProps) => {
             {!isCollapsed && (
               <>
                 <GraduationCap className="w-8 h-8 text-primary" />
-                <span className="font-bold text-lg">Education 5.0.1</span>
+                <span className="font-bold text-lg">Education 5.0</span>
               </>
             )}
             {isCollapsed && <GraduationCap className="w-8 h-8 text-primary mx-auto" />}

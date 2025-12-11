@@ -1,41 +1,12 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { schoolAdminApi, Parent, CreateParentData } from '@/api/school-admin';
-import { DataTable, Column } from '@/components/tables/DataTable';
-import { Button } from '@/components/ui/button';
-import { Plus, UserCircle } from 'lucide-react';
-import { toast } from 'sonner';
-import { useAuth } from '@/contexts/AuthContext';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { UserCircle } from 'lucide-react';
 
 const Parents = () => {
+<<<<<<< HEAD
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -243,195 +214,61 @@ const Parents = () => {
     );
   }
 
+=======
+  const { data: parents = [], isLoading } = useQuery({
+    queryKey: ['parents'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('user_id, profiles(id, email, first_name, last_name, phone, is_active)')
+        .eq('role', 'parent');
+      if (error) throw error;
+      return data?.map(r => r.profiles).filter(Boolean) || [];
+    },
+  });
+
+>>>>>>> 76f84c8f94dea8c713170403af83ef2e0423f5db
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold flex items-center gap-3">
-            <UserCircle className="w-8 h-8 text-parent" />
-            Parents & Guardians
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            Manage parent and guardian accounts
-          </p>
-        </div>
-        <Button
-          onClick={handleOpenCreate}
-          className="rounded-2xl bg-parent hover:bg-parent/90"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Create Parent Account
-        </Button>
+      <div>
+        <h1 className="text-3xl font-bold flex items-center gap-3">
+          <UserCircle className="w-8 h-8 text-parent" />
+          Parents
+        </h1>
+        <p className="text-muted-foreground">View parents in the system</p>
       </div>
 
-      <DataTable
-        data={parents}
-        columns={columns}
-        onEdit={handleOpenEdit}
-        onDelete={handleDelete}
-        searchPlaceholder="Search parents..."
-        searchKeys={['first_name', 'last_name', 'email']}
-      />
-
-      {/* Create/Edit Dialog */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="sm:max-w-[500px] rounded-3xl">
-          <form onSubmit={handleSubmit}>
-            <DialogHeader>
-              <DialogTitle>
-                {editingParent ? 'Edit Parent' : 'Create Parent Account'}
-              </DialogTitle>
-              <DialogDescription>
-                {editingParent
-                  ? 'Update parent information below'
-                  : 'Fill in the details to create a new parent account'}
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="first_name">First Name *</Label>
-                <Input
-                  id="first_name"
-                  value={formData.first_name}
-                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                  placeholder="Enter first name"
-                  required
-                  className="rounded-2xl"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="last_name">Last Name *</Label>
-                <Input
-                  id="last_name"
-                  value={formData.last_name}
-                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                  placeholder="Enter last name"
-                  required
-                  className="rounded-2xl"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="parent@example.com"
-                  required
-                  className="rounded-2xl"
-                />
-              </div>
-
-              {!editingParent && (
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password *</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    placeholder="Minimum 6 characters"
-                    required
-                    minLength={6}
-                    className="rounded-2xl"
-                  />
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="+1234567890"
-                  className="rounded-2xl"
-                />
-              </div>
-
-              {!editingParent && (
-                <div className="space-y-2">
-                  <Label>Link to Students *</Label>
-                  <div className="border rounded-2xl p-4 max-h-48 overflow-y-auto space-y-2">
-                    {students.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No students available</p>
-                    ) : (
-                      students.map((student: any) => (
-                        <div key={student.id} className="flex items-center space-x-2">
-                          <Checkbox
-                            id={student.id}
-                            checked={selectedStudents.includes(student.id)}
-                            onCheckedChange={() => toggleStudent(student.id)}
-                          />
-                          <label
-                            htmlFor={student.id}
-                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                          >
-                            {student.first_name} {student.last_name} ({student.email})
-                          </label>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                  {selectedStudents.length > 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      {selectedStudents.length} student(s) selected
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCloseForm}
-                className="rounded-2xl"
-              >
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={createMutation.isPending || updateMutation.isPending}
-                className="rounded-2xl bg-parent hover:bg-parent/90"
-              >
-                {createMutation.isPending || updateMutation.isPending
-                  ? 'Saving...'
-                  : editingParent
-                  ? 'Update'
-                  : 'Create'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation */}
-      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <AlertDialogContent className="rounded-3xl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the parent account for "{deletingParent?.first_name} {deletingParent?.last_name}". This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-2xl">Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              disabled={deleteMutation.isPending}
-              className="rounded-2xl bg-destructive hover:bg-destructive/90"
-            >
-              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Card className="rounded-3xl border-none shadow-sm">
+        <CardHeader><CardTitle>All Parents</CardTitle></CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>
+          ) : parents.length === 0 ? (
+            <p className="text-center py-8 text-muted-foreground">No parents found</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {parents.map((p: any) => (
+                  <TableRow key={p.id}>
+                    <TableCell className="font-medium">{p.first_name} {p.last_name}</TableCell>
+                    <TableCell>{p.email}</TableCell>
+                    <TableCell>{p.phone || '-'}</TableCell>
+                    <TableCell><Badge variant={p.is_active ? 'default' : 'secondary'}>{p.is_active ? 'Active' : 'Inactive'}</Badge></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

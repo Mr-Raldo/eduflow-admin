@@ -1,31 +1,21 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-<<<<<<< HEAD
-import { handleError, handleSuccess } from '@/lib/errorHandler';
-=======
 import { toast } from 'sonner';
 import type { User, Session } from '@supabase/supabase-js';
 import type { Database } from '@/integrations/supabase/types';
->>>>>>> 76f84c8f94dea8c713170403af83ef2e0423f5db
 
 type AppRole = Database['public']['Enums']['app_role'];
 
 interface UserProfile {
   id: string;
   email: string;
-<<<<<<< HEAD
-  first_name: string;
-  last_name: string;
-  account_type: 'super_admin' | 'school_admin' | 'teacher' | 'student' | 'parent';
-=======
   first_name: string | null;
   last_name: string | null;
   phone: string | null;
   avatar_url: string | null;
   is_active: boolean | null;
   roles: AppRole[];
->>>>>>> 76f84c8f94dea8c713170403af83ef2e0423f5db
 }
 
 interface AuthContextType {
@@ -114,7 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      
+
       if (session?.user) {
         fetchUserProfile(session.user.id).then((p) => {
           setProfile(p);
@@ -135,71 +125,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
       });
 
-<<<<<<< HEAD
-      // Validate response - backend may return 200 with error inside response.data
-      if (response.data.statusCode === 401 ||
-          response.data.status === 'failed' ||
-          response.data.error ||
-          !response.data.success ||
-          !response.data.token) {
-        const errorMessage = response.data.message ||
-                           response.data.error?.message ||
-                           'Invalid credentials. Please check your email and password.';
-
-        // Clear any partial data
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
-        setUser(null);
-
-        handleError({ message: errorMessage });
-        throw new Error(errorMessage);
-      }
-
-      const { token, user: userData } = response.data;
-
-      // Validate we have all required data
-      if (!token || !userData) {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
-        setUser(null);
-
-        handleError({ message: 'Invalid response from server. Please try again.' });
-        throw new Error('Invalid login response');
-      }
-
-      // Store token as access_token for consistency with axios interceptor
-      localStorage.setItem('access_token', token);
-      // Backend doesn't provide refresh_token, store empty for now
-      localStorage.setItem('refresh_token', '');
-
-      // Store user with correct frontend account_type
-      const userWithCorrectType: User = {
-        ...userData,
-        account_type: accountType as User['account_type'], // Keep frontend type (super_admin or school_admin)
-      };
-
-      localStorage.setItem('user', JSON.stringify(userWithCorrectType));
-      setUser(userWithCorrectType);
-      handleSuccess('Login successful!');
-      navigate('/dashboard');
-    } catch (error: any) {
-      // Clear any partial data on error
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('user');
-      setUser(null);
-
-      // Error message is now properly formatted by axios interceptor
-      handleError(error, 'Login failed. Please check your credentials.');
-=======
       if (error) throw error;
 
       if (data.user) {
         const userProfile = await fetchUserProfile(data.user.id);
         setProfile(userProfile);
-        
+
         if (!userProfile?.roles?.length) {
           toast.error('Your account has no assigned role. Please contact an administrator.');
           await supabase.auth.signOut();
@@ -212,20 +143,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error: any) {
       const message = error.message || 'Login failed. Please check your credentials.';
       toast.error(message);
->>>>>>> 76f84c8f94dea8c713170403af83ef2e0423f5db
       throw error;
     }
   };
 
-<<<<<<< HEAD
-  const logout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
-    setUser(null);
-    handleSuccess('Logged out successfully');
-    navigate('/login');
-=======
   const signup = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
       const redirectUrl = `${window.location.origin}/`;
@@ -273,14 +194,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const getPrimaryRole = (): AppRole | null => {
     if (!profile?.roles?.length) return null;
-    
+
     // Priority order for display
     const priority: AppRole[] = ['admin', 'headmaster', 'hod', 'teacher', 'parent', 'student'];
     for (const role of priority) {
       if (profile.roles.includes(role)) return role;
     }
     return profile.roles[0];
->>>>>>> 76f84c8f94dea8c713170403af83ef2e0423f5db
   };
 
   const getRoleColor = () => {

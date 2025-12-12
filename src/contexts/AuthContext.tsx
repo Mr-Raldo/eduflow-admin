@@ -5,30 +5,34 @@ import axios from 'axios';
 
 type AppRole = 'admin' | 'headmaster' | 'hod' | 'teacher' | 'student' | 'parent';
 
-interface User {
+interface UserProfile {
   id: string;
   email: string;
   first_name: string;
   last_name: string;
-  phone?: string;
-  role: AppRole;
+  phone?: string | null;
   is_active: boolean;
+  roles: AppRole[]; // Array to support multiple roles
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: UserProfile | null;
+  profile: UserProfile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  signup: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   logout: () => void;
   getRoleColor: () => string;
   getRoleGradient: () => string;
+  hasRole: (role: AppRole) => boolean;
+  getPrimaryRole: () => AppRole | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -39,7 +43,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (token && storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        const userData = JSON.parse(storedUser);
+        // Convert single role to roles array if needed
+        const userProfile: UserProfile = {
+          ...userData,
+          roles: userData.roles || (userData.role ? [userData.role] : [])
+        };
+        setUser(userProfile);
       } catch (error) {
         console.error('Error parsing stored user:', error);
         localStorage.removeItem('access_token');
@@ -65,10 +75,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const { token, user: userData } = response.data;
 
+      // Convert backend user (single role) to frontend profile (roles array)
+      const userProfile: UserProfile = {
+        id: userData.id,
+        email: userData.email,
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        phone: userData.phone,
+        is_active: userData.is_active,
+        roles: userData.role ? [userData.role] : []
+      };
+
+      // Check if user has at least one role
+      if (!userProfile.roles.length) {
+        toast.error('Your account has no assigned role. Please contact an administrator.');
+        throw new Error('No role assigned');
+      }
+
       // Store token and user
       localStorage.setItem('access_token', token);
-      localStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userProfile));
+      setUser(userProfile);
 
       toast.success('Login successful!');
       navigate('/dashboard');
@@ -79,6 +106,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
 
       const message = error.response?.data?.error || error.message || 'Login failed. Please check your credentials.';
+      if (!error.message?.includes('No role assigned')) {
+        toast.error(message);
+      }
+      throw error;
+    }
+  };
+
+  const signup = async (email: string, password: string, firstName: string, lastName: string) => {
+    try {
+      const response = await axios.post('/api/auth/register', {
+        email,
+        password,
+        first_name: firstName,
+        last_name: lastName,
+        role: 'student' // Default role for self-signup
+      });
+
+      if (response.data.success) {
+        toast.success('Account created successfully! Please contact an administrator to assign your role.');
+        navigate('/auth');
+      } else {
+        throw new Error(response.data.error || 'Signup failed');
+      }
+    } catch (error: any) {
+      const message = error.response?.data?.error || error.message || 'Signup failed. Please try again.';
       toast.error(message);
       throw error;
     }
@@ -89,11 +141,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('user');
     setUser(null);
     toast.success('Logged out successfully');
-    navigate('/login');
+    navigate('/auth');
+  };
+
+  const hasRole = (role: AppRole): boolean => {
+    return user?.roles?.includes(role) || false;
+  };
+
+  const getPrimaryRole = (): AppRole | null => {
+    if (!user?.roles?.length) return null;
+
+    // Priority order for display
+    const priority: AppRole[] = ['admin', 'headmaster', 'hod', 'teacher', 'parent', 'student'];
+    for (const role of priority) {
+      if (user.roles.includes(role)) return role;
+    }
+    return user.roles[0];
   };
 
   const getRoleColor = () => {
-    if (!user) return 'hsl(var(--primary))';
+    const primaryRole = getPrimaryRole();
+    if (!primaryRole) return 'hsl(var(--primary))';
 
     const roleColors: Record<AppRole, string> = {
       admin: 'hsl(var(--super-admin))',
@@ -104,11 +172,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       parent: 'hsl(var(--parent))',
     };
 
-    return roleColors[user.role] || 'hsl(var(--primary))';
+    return roleColors[primaryRole] || 'hsl(var(--primary))';
   };
 
   const getRoleGradient = () => {
-    if (!user) return 'gradient-teacher';
+    const primaryRole = getPrimaryRole();
+    if (!primaryRole) return 'gradient-teacher';
 
     const roleGradients: Record<AppRole, string> = {
       admin: 'gradient-super-admin',
@@ -119,7 +188,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       parent: 'gradient-parent',
     };
 
-    return roleGradients[user.role] || 'gradient-teacher';
+    return roleGradients[primaryRole] || 'gradient-teacher';
   };
 
   const isAuthenticated = !!user;
@@ -128,12 +197,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         user,
+        profile: user, // Same as user for compatibility
         isAuthenticated,
         isLoading,
         login,
+        signup,
         logout,
         getRoleColor,
         getRoleGradient,
+        hasRole,
+        getPrimaryRole,
       }}
     >
       {children}

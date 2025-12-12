@@ -1,6 +1,19 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, School, BookOpen, GraduationCap, FileText, TrendingUp } from 'lucide-react';
+import { Users, School, BookOpen, GraduationCap, FileText, TrendingUp, FolderOpen, Clock, Calendar, Download } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
+import { format } from 'date-fns';
+import { studentsApi } from '@/api/students';
+import { teacherApi } from '@/api/teacher';
+import { parentApi } from '@/api/parent';
+
+// Helper function to extract nested join data from PostgREST responses
+const extractJoinData = (data: any) => {
+  if (!data) return null;
+  if (Array.isArray(data)) return data[0] || null;
+  return data;
+};
 
 const Dashboard = () => {
   const { profile, getRoleGradient, hasRole } = useAuth();

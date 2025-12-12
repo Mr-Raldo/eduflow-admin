@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:4003/api',
+  baseURL: import.meta.env.VITE_API_URL || 'https://ic8s8ks4wsgsc08wsss8osg0.beetroot-app.com/api',
   headers: {
     'Content-Type': 'application/json',
   },

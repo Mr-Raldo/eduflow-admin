@@ -35,8 +35,7 @@ interface AuthContextType {
   profile: UserProfile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
+  login: (email: string, password: string, role: AppRole) => Promise<void>;
   logout: () => void;
   getRoleColor: () => string;
   getRoleGradient: () => string;
@@ -87,7 +86,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, selectedRole: AppRole) => {
     try {
       const response = await axios.post('/api/auth/login', {
         email,
@@ -104,6 +103,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const { token, user: backendUser } = response.data;
+
+      // Verify the user's actual role matches the selected role
+      if (backendUser.role !== selectedRole) {
+        toast.error(`Invalid role selection. Your account role is: ${backendUser.role}`);
+        throw new Error('Role mismatch');
+      }
 
       // Convert backend user to frontend profile
       const userProfile = convertToProfile(backendUser as BackendUser);
@@ -130,33 +135,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(null);
 
       const message = error.response?.data?.error || error.message || 'Login failed. Please check your credentials.';
-      if (!error.message?.includes('No role assigned')) {
+      if (!error.message?.includes('No role assigned') && !error.message?.includes('Role mismatch')) {
         toast.error(message);
       }
-      throw error;
-    }
-  };
-
-  const signup = async (email: string, password: string, firstName: string, lastName: string) => {
-    try {
-      // Note: Backend requires admin authentication for registration
-      const response = await axios.post('/api/auth/register', {
-        email,
-        password,
-        first_name: firstName,
-        last_name: lastName,
-        role: 'student' // Default role for self-signup
-      });
-
-      if (response.data.success) {
-        toast.success('Account created successfully! An administrator will assign your role.');
-        navigate('/auth');
-      } else {
-        throw new Error(response.data.error || 'Signup failed');
-      }
-    } catch (error: any) {
-      const message = error.response?.data?.error || error.message || 'Signup failed. Please try again.';
-      toast.error(message);
       throw error;
     }
   };
@@ -226,7 +207,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated,
         isLoading,
         login,
-        signup,
         logout,
         getRoleColor,
         getRoleGradient,

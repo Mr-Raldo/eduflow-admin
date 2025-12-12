@@ -3,16 +3,31 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import axios from 'axios';
 
+// Match backend exactly
 type AppRole = 'admin' | 'headmaster' | 'hod' | 'teacher' | 'student' | 'parent';
 
+// Backend user structure (what we receive from API)
+interface BackendUser {
+  id: string;
+  email: string;
+  role: AppRole;  // Single role from backend
+  first_name: string;
+  last_name: string;
+  phone?: string;
+  profile_image?: string;
+  is_active: boolean;
+}
+
+// Frontend user structure (what we use internally)
 interface UserProfile {
   id: string;
   email: string;
   first_name: string;
   last_name: string;
   phone?: string | null;
+  profile_image?: string;
   is_active: boolean;
-  roles: AppRole[]; // Array to support multiple roles
+  roles: AppRole[]; // Convert to array for frontend
 }
 
 interface AuthContextType {
@@ -36,6 +51,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Convert backend user to frontend profile
+  const convertToProfile = (backendUser: BackendUser): UserProfile => {
+    return {
+      id: backendUser.id,
+      email: backendUser.email,
+      first_name: backendUser.first_name,
+      last_name: backendUser.last_name,
+      phone: backendUser.phone,
+      profile_image: backendUser.profile_image,
+      is_active: backendUser.is_active,
+      roles: [backendUser.role] // Convert single role to array
+    };
+  };
+
   useEffect(() => {
     // Check for existing session on mount
     const token = localStorage.getItem('access_token');
@@ -44,12 +73,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (token && storedUser) {
       try {
         const userData = JSON.parse(storedUser);
-        // Convert single role to roles array if needed
-        const userProfile: UserProfile = {
-          ...userData,
-          roles: userData.roles || (userData.role ? [userData.role] : [])
-        };
-        setUser(userProfile);
+        // Handle both old format (roles array) and new format (single role)
+        if (!userData.roles && userData.role) {
+          userData.roles = [userData.role];
+        }
+        setUser(userData);
       } catch (error) {
         console.error('Error parsing stored user:', error);
         localStorage.removeItem('access_token');
@@ -66,6 +94,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password,
       });
 
+      console.log('Login response:', response.data);
+
       // Validate response
       if (!response.data.success || !response.data.token || !response.data.user) {
         const errorMessage = response.data.error || 'Invalid credentials. Please check your email and password.';
@@ -73,20 +103,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(errorMessage);
       }
 
-      const { token, user: userData } = response.data;
+      const { token, user: backendUser } = response.data;
 
-      // Convert backend user (single role) to frontend profile (roles array)
-      const userProfile: UserProfile = {
-        id: userData.id,
-        email: userData.email,
-        first_name: userData.first_name,
-        last_name: userData.last_name,
-        phone: userData.phone,
-        is_active: userData.is_active,
-        roles: userData.role ? [userData.role] : []
-      };
+      // Convert backend user to frontend profile
+      const userProfile = convertToProfile(backendUser as BackendUser);
 
-      // Check if user has at least one role
+      console.log('Converted profile:', userProfile);
+
+      // Check if user has a role
       if (!userProfile.roles.length) {
         toast.error('Your account has no assigned role. Please contact an administrator.');
         throw new Error('No role assigned');
@@ -115,6 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signup = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
+      // Note: Backend requires admin authentication for registration
       const response = await axios.post('/api/auth/register', {
         email,
         password,
@@ -124,7 +149,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (response.data.success) {
-        toast.success('Account created successfully! Please contact an administrator to assign your role.');
+        toast.success('Account created successfully! An administrator will assign your role.');
         navigate('/auth');
       } else {
         throw new Error(response.data.error || 'Signup failed');

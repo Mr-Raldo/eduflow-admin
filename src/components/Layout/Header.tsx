@@ -18,13 +18,13 @@ interface HeaderProps {
 }
 
 const Header = ({ onToggleSidebar }: HeaderProps) => {
-  const { profile, logout, getRoleColor, getPrimaryRole } = useAuth();
+  const { profile, logout, getRoleColor, getPrimaryRole, hasRole } = useAuth();
 
   // Fetch school information for school admins
   const { data: schools = [] } = useQuery({
-    queryKey: ['admin-schools', user?.id],
-    queryFn: () => administratorsApi.getSchools(user?.id || ''),
-    enabled: !!user?.id && user.account_type === 'school_admin',
+    queryKey: ['admin-schools', profile?.id],
+    queryFn: () => administratorsApi.getSchools(profile?.id || ''),
+    enabled: !!profile?.id && hasRole('admin'),
   });
 
   const getInitials = () => {
@@ -79,7 +79,7 @@ const Header = ({ onToggleSidebar }: HeaderProps) => {
                     {profile?.first_name} {profile?.last_name}
                   </p>
                   <p className="text-xs text-muted-foreground">{getRoleName()}</p>
-                  {user?.account_type === 'school_admin' && schools.length > 0 && (
+                  {hasRole('admin') && schools.length > 0 && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                       <School className="w-3 h-3" />
                       {schools[0].school?.name || 'School'}

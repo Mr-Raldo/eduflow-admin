@@ -1,17 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-<<<<<<< HEAD
-import { Users, School, BookOpen, GraduationCap, FileText, TrendingUp, Calendar, Clock, Download, FolderOpen } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
-import { schoolAdminApi } from '@/api/school-admin';
-import { studentsApi, extractJoinData } from '@/api/students';
-import { teacherApi } from '@/api/teacher';
-import { parentApi } from '@/api/parent';
-import { format } from 'date-fns';
-import { Link } from 'react-router-dom';
-=======
 import { Users, School, BookOpen, GraduationCap, FileText, TrendingUp } from 'lucide-react';
->>>>>>> 76f84c8f94dea8c713170403af83ef2e0423f5db
 
 const Dashboard = () => {
   const { profile, getRoleGradient, hasRole } = useAuth();
@@ -69,71 +58,6 @@ const AdminDashboard = () => {
   );
 };
 
-<<<<<<< HEAD
-const SchoolAdminDashboard = () => {
-  const { user } = useAuth();
-
-  // Fetch real data from backend
-  const { data: departments = [], isLoading: loadingDepartments } = useQuery({
-    queryKey: ['departments'],
-    queryFn: () => schoolAdminApi.getDepartments(''),
-  });
-
-  const { data: subjects = [], isLoading: loadingSubjects } = useQuery({
-    queryKey: ['subjects'],
-    queryFn: () => schoolAdminApi.getSubjects(''),
-  });
-
-  const { data: teachers = [], isLoading: loadingTeachers } = useQuery({
-    queryKey: ['teachers'],
-    queryFn: () => schoolAdminApi.getSchoolTeachers(''),
-  });
-
-  const { data: students = [], isLoading: loadingStudents } = useQuery({
-    queryKey: ['students'],
-    queryFn: () => schoolAdminApi.getSchoolStudents(''),
-  });
-
-  const { data: classes = [], isLoading: loadingClasses } = useQuery({
-    queryKey: ['classes'],
-    queryFn: schoolAdminApi.getClasses,
-  });
-
-  const { data: parents = [], isLoading: loadingParents } = useQuery({
-    queryKey: ['parents'],
-    queryFn: schoolAdminApi.getParents,
-  });
-
-  console.log('Dashboard metrics:', { departments, subjects, teachers, students, classes, parents });
-
-  const isLoading = loadingDepartments || loadingSubjects || loadingTeachers || loadingStudents || loadingClasses || loadingParents;
-
-  const stats = [
-    {
-      label: 'Students',
-      value: isLoading ? '...' : students.length.toString(),
-      icon: Users,
-      color: 'text-student'
-    },
-    {
-      label: 'Teachers',
-      value: isLoading ? '...' : teachers.length.toString(),
-      icon: GraduationCap,
-      color: 'text-teacher'
-    },
-    {
-      label: 'Classes',
-      value: isLoading ? '...' : classes.length.toString(),
-      icon: School,
-      color: 'text-super-admin'
-    },
-    {
-      label: 'Parents',
-      value: isLoading ? '...' : parents.length.toString(),
-      icon: Users,
-      color: 'text-parent'
-    },
-=======
 const HeadmasterDashboard = () => {
   const stats = [
     { label: 'Departments', value: '8', icon: BookOpen, color: 'text-super-admin' },
@@ -167,7 +91,6 @@ const HODDashboard = () => {
     { label: 'Teachers', value: '12', icon: GraduationCap, color: 'text-teacher' },
     { label: 'Resources', value: '145', icon: FileText, color: 'text-parent' },
     { label: 'Pending Approvals', value: '8', icon: TrendingUp, color: 'text-student' },
->>>>>>> 76f84c8f94dea8c713170403af83ef2e0423f5db
   ];
 
   return (

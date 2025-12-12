@@ -51,32 +51,9 @@ const Sidebar = ({ isCollapsed }: SidebarProps) => {
         { label: 'Teachers', href: '/teachers', icon: GraduationCap },
         { label: 'Students', href: '/students', icon: Users },
         { label: 'Parents', href: '/parents', icon: UserCircle },
-<<<<<<< HEAD
-        { label: 'Classes', href: '/classes', icon: School },
-        { label: 'Teacher Assignments', href: '/teacher-assignments', icon: Users },
-      ],
-      teacher: [
-        { label: 'My Classes', href: '/my-classes', icon: School },
-        { label: 'Subjects', href: '/subjects', icon: BookOpen },
-        { label: 'Syllabi', href: '/syllabi', icon: FileText },
-        { label: 'Assignments', href: '/assignments', icon: BookOpen },
-        { label: 'Resources', href: '/resources', icon: FolderOpen },
-      ],
-      student: [
-        { label: 'My Classes', href: '/my-classes', icon: School },
-        { label: 'Assignments', href: '/my-assignments', icon: BookOpen },
-        { label: 'Grades', href: '/my-grades', icon: FileText },
-      ],
-      parent: [
-        { label: 'Children', href: '/children', icon: Users },
-        { label: 'Performance', href: '/performance', icon: FileText },
-      ],
-    };
-=======
         { label: 'Classes', href: '/classes', icon: School }
       );
     }
->>>>>>> 76f84c8f94dea8c713170403af83ef2e0423f5db
 
     // HOD routes
     if (hasRole('hod')) {

@@ -28,18 +28,10 @@ const Header = ({ onToggleSidebar }: HeaderProps) => {
   });
 
   const getInitials = () => {
-<<<<<<< HEAD
-    if (!user) return 'U';
-    if (!user.first_name || !user.last_name) {
-      return user.email.charAt(0).toUpperCase();
-    }
-    return `${user.first_name.charAt(0)}${user.last_name.charAt(0)}`.toUpperCase();
-=======
     if (!profile) return 'U';
     const first = profile.first_name?.charAt(0) || '';
     const last = profile.last_name?.charAt(0) || '';
     return `${first}${last}`.toUpperCase() || 'U';
->>>>>>> 76f84c8f94dea8c713170403af83ef2e0423f5db
   };
 
   const getRoleName = () => {

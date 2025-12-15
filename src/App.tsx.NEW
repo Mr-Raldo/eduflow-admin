@@ -1,0 +1,93 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from '@/contexts/AuthContext';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import Layout from '@/components/Layout/Layout';
+import { Toaster } from 'sonner';
+
+// Pages
+import Login from '@/pages/Login';
+import Dashboard from '@/pages/Dashboard';
+import Schools from '@/pages/Schools';
+import Administrators from '@/pages/Administrators';
+import Teachers from '@/pages/Teachers';
+import Students from '@/pages/Students';
+import NotFound from '@/pages/NotFound';
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Toaster position="top-right" richColors />
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/login" element={<Login />} />
+
+          {/* Protected Routes */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            {/* Default redirect to dashboard */}
+            <Route index element={<Navigate to="/dashboard" replace />} />
+
+            {/* Dashboard - All roles */}
+            <Route path="dashboard" element={<Dashboard />} />
+
+            {/* Super Admin Only Routes */}
+            <Route
+              path="schools"
+              element={
+                <ProtectedRoute allowedRoles={['super_admin']}>
+                  <Schools />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="administrators"
+              element={
+                <ProtectedRoute allowedRoles={['super_admin']}>
+                  <Administrators />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Administrator Routes (Super Admin can also access) */}
+            <Route
+              path="teachers"
+              element={
+                <ProtectedRoute allowedRoles={['super_admin', 'administrator']}>
+                  <Teachers />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="students"
+              element={
+                <ProtectedRoute allowedRoles={['super_admin', 'administrator']}>
+                  <Students />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* TODO: Add more routes as needed */}
+            {/*
+            <Route path="parents" element={...} />
+            <Route path="departments" element={...} />
+            <Route path="subjects" element={...} />
+            <Route path="classes" element={...} />
+            */}
+          </Route>
+
+          {/* 404 Page */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
+  );
+}
+
+export default App;

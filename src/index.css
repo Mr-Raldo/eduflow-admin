@@ -1,0 +1,134 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 0 0% 100%;
+    --ring: 262 83% 58%;
+
+    --radius: 1rem;
+    
+    /* Role-based colors */
+    --super-admin: 38 92% 50%;
+    --super-admin-light: 43 96% 56%;
+    --teacher: 262 83% 58%;
+    --teacher-light: 258 90% 66%;
+    --student: 172 66% 50%;
+    --student-light: 173 80% 40%;
+    --parent: 24 95% 53%;
+    --parent-light: 17 88% 40%;
+    
+    --success: 142 71% 45%;
+    --error: 0 84% 60%;
+    
+    /* Gradients */
+    --gradient-super-admin: linear-gradient(135deg, hsl(38 92% 50%), hsl(43 96% 56%));
+    --gradient-teacher: linear-gradient(135deg, hsl(262 83% 58%), hsl(258 90% 66%));
+    --gradient-student: linear-gradient(135deg, hsl(172 66% 50%), hsl(173 80% 40%));
+    --gradient-parent: linear-gradient(135deg, hsl(24 95% 53%), hsl(17 88% 40%));
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222 47% 11%;
+    --foreground: 210 40% 98%;
+
+    --card: 217 33% 17%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 262 83% 58%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body;
+  }
+}
+
+@layer utilities {
+  .gradient-super-admin {
+    background: var(--gradient-super-admin);
+  }
+  .gradient-teacher {
+    background: var(--gradient-teacher);
+  }
+  .gradient-student {
+    background: var(--gradient-student);
+  }
+  .gradient-parent {
+    background: var(--gradient-parent);
+  }
+}
